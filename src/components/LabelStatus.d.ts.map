@@ -1,0 +1,1 @@
+{"version":3,"file":"LabelStatus.d.ts","sourceRoot":"","sources":["../../../src/components/LabelStatus.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,KAAK,MAAM,OAAO,CAAA;AAW9B,UAAU,WAAW;IACnB,MAAM,EAAE,WAAW,GAAG,MAAM,GAAG,WAAW,CAAA;CAC3C;AACD,QAAA,MAAM,WAAW,EAAE,KAAK,CAAC,iBAAiB,CAAC,WAAW,CAYrD,CAAA;AAED,eAAe,WAAW,CAAA"}
