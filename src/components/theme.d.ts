@@ -19,4 +19,3 @@ export declare const substrateGray: {
 declare const light: ThemeOptions;
 export default light;
 export declare const dark: ThemeOptions;
-//# sourceMappingURL=theme.d.ts.map

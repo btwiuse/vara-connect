@@ -10,4 +10,3 @@ interface Props extends SizeScale {
 }
 declare const _default: import("react").NamedExoticComponent<Props>;
 export default _default;
-//# sourceMappingURL=BalanceValue.d.ts.map

@@ -5,4 +5,3 @@ interface Props extends IconButtonProps {
 }
 declare const ThemeButton: FunctionComponent<Props>;
 export default ThemeButton;
-//# sourceMappingURL=ThemeButton.d.ts.map

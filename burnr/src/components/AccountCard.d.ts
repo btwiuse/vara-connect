@@ -6,4 +6,3 @@ interface Props {
 }
 declare const AccountCard: FunctionComponent<Props>;
 export default AccountCard;
-//# sourceMappingURL=AccountCard.d.ts.map

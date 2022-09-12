@@ -4,4 +4,3 @@ interface StatusProps {
 }
 declare const LabelStatus: React.FunctionComponent<StatusProps>;
 export default LabelStatus;
-//# sourceMappingURL=LabelStatus.d.ts.map

@@ -8,4 +8,3 @@ declare const ApiContext: import("react").Context<ApiPromise>;
 declare const EvtMgrContext: import("react").Context<EvtMgrCtx>;
 declare const EvtTxContext: import("react").Context<EvtTxCtx>;
 export { AccountContext, AdminContext, ApiContext, BalanceVisibleContext, EvtMgrContext, EvtTxContext, };
-//# sourceMappingURL=contexts.d.ts.map

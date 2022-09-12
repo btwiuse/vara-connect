@@ -6,4 +6,3 @@ interface Props {
 }
 declare const IconWeb3: FunctionComponent<Props>;
 export default IconWeb3;
-//# sourceMappingURL=IconWeb3.d.ts.map

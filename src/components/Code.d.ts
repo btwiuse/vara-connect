@@ -5,4 +5,3 @@ interface HeadingProps {
 }
 export declare const Code: React.FunctionComponent<HeadingProps>;
 export {};
-//# sourceMappingURL=Code.d.ts.map

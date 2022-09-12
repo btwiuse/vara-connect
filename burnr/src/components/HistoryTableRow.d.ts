@@ -14,4 +14,3 @@ interface Props {
 }
 declare const HistoryTableRow: FunctionComponent<Props>;
 export default HistoryTableRow;
-//# sourceMappingURL=HistoryTableRow.d.ts.map

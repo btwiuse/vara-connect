@@ -3,4 +3,3 @@ declare const UIContainer: ({ children }: {
     children: React.ReactNode;
 }) => JSX.Element;
 export default UIContainer;
-//# sourceMappingURL=UIContainer.d.ts.map

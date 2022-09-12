@@ -9,4 +9,3 @@ export declare const Sidebar: ({ children }: {
 }) => JSX.Element;
 export declare const SidebarLink: React.FunctionComponent<SidebarLinkProps>;
 export {};
-//# sourceMappingURL=Sidebar.d.ts.map

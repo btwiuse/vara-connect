@@ -8,4 +8,3 @@ export { Section, SectionHeading, SectionText, SectionHeroText, SectionRef, } fr
 export { Sidebar, SidebarLink } from "./Sidebar";
 export { default as theme, dark } from "./theme";
 export { default as UIContainer } from "./UIContainer";
-//# sourceMappingURL=index.d.ts.map

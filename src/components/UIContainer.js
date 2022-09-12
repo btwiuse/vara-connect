@@ -1,0 +1,26 @@
+import * as React from "react";
+import { makeStyles } from "@material-ui/core";
+const useStyles = makeStyles((theme) => ({
+    root: {
+        display: "flex",
+        width: "100%",
+        maxWidth: theme.breakpoints.values.lg,
+        margin: "auto",
+        paddingTop: theme.spacing(5),
+        paddingLeft: theme.spacing(5),
+        paddingRight: theme.spacing(5),
+        "& > *": {
+            width: "100%",
+        },
+        [theme.breakpoints.down("md")]: {
+            flexDirection: "column",
+            paddingTop: theme.spacing(12),
+        },
+    },
+}));
+const UIContainer = ({ children }) => {
+    const classes = useStyles();
+    return React.createElement("div", { className: classes.root }, children);
+};
+export default UIContainer;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiVUlDb250YWluZXIuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi9zcmMvY29tcG9uZW50cy9VSUNvbnRhaW5lci50c3giXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUEsT0FBTyxLQUFLLEtBQUssTUFBTSxPQUFPLENBQUE7QUFDOUIsT0FBTyxFQUFFLFVBQVUsRUFBRSxNQUFNLG1CQUFtQixDQUFBO0FBRTlDLE1BQU0sU0FBUyxHQUFHLFVBQVUsQ0FBQyxDQUFDLEtBQUssRUFBRSxFQUFFLENBQUMsQ0FBQztJQUN2QyxJQUFJLEVBQUU7UUFDSixPQUFPLEVBQUUsTUFBTTtRQUNmLEtBQUssRUFBRSxNQUFNO1FBQ2IsUUFBUSxFQUFFLEtBQUssQ0FBQyxXQUFXLENBQUMsTUFBTSxDQUFDLEVBQUU7UUFDckMsTUFBTSxFQUFFLE1BQU07UUFDZCxVQUFVLEVBQUUsS0FBSyxDQUFDLE9BQU8sQ0FBQyxDQUFDLENBQUM7UUFDNUIsV0FBVyxFQUFFLEtBQUssQ0FBQyxPQUFPLENBQUMsQ0FBQyxDQUFDO1FBQzdCLFlBQVksRUFBRSxLQUFLLENBQUMsT0FBTyxDQUFDLENBQUMsQ0FBQztRQUM5QixPQUFPLEVBQUU7WUFDUCxLQUFLLEVBQUUsTUFBTTtTQUNkO1FBQ0QsQ0FBQyxLQUFLLENBQUMsV0FBVyxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQyxFQUFFO1lBQzlCLGFBQWEsRUFBRSxRQUFRO1lBQ3ZCLFVBQVUsRUFBRSxLQUFLLENBQUMsT0FBTyxDQUFDLEVBQUUsQ0FBQztTQUM5QjtLQUNGO0NBQ0YsQ0FBQyxDQUFDLENBQUE7QUFFSCxNQUFNLFdBQVcsR0FBRyxDQUFDLEVBQUUsUUFBUSxFQUFpQyxFQUFFLEVBQUU7SUFDbEUsTUFBTSxPQUFPLEdBQUcsU0FBUyxFQUFFLENBQUE7SUFDM0IsT0FBTyw2QkFBSyxTQUFTLEVBQUUsT0FBTyxDQUFDLElBQUksSUFBRyxRQUFRLENBQU8sQ0FBQTtBQUN2RCxDQUFDLENBQUE7QUFFRCxlQUFlLFdBQVcsQ0FBQSJ9

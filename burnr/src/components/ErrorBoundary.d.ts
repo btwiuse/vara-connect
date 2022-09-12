@@ -12,4 +12,3 @@ declare class ErrorBoundary extends Component<Props, State> {
     render(): string | number | boolean | JSX.Element | import("react").ReactFragment | null | undefined;
 }
 export default ErrorBoundary;
-//# sourceMappingURL=ErrorBoundary.d.ts.map

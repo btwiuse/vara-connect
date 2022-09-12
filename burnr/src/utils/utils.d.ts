@@ -15,4 +15,3 @@ export declare const isValidAddressPolkadotAddress: (address?: string) => boolea
 export declare const prettyBalance: (rawBalance: Balance | BN | number) => string;
 export declare const humanReadable: (amnt: number, api: ApiPromise) => string;
 export declare const validateLocalstorage: () => void;
-//# sourceMappingURL=utils.d.ts.map

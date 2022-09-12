@@ -15,4 +15,3 @@ export declare const SectionHeroText: ({ children, }: {
 }) => JSX.Element;
 export declare const SectionRef: React.FunctionComponent<ButtonProps>;
 export {};
-//# sourceMappingURL=Section.d.ts.map

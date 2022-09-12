@@ -8,4 +8,3 @@ interface Props {
 }
 declare const InputFunds: FunctionComponent<Props>;
 export default InputFunds;
-//# sourceMappingURL=InputFunds.d.ts.map
