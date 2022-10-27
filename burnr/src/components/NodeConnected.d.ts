@@ -5,4 +5,3 @@ export interface Option {
     provider: string;
 }
 export default function NodeConnected(): ReactElement;
-//# sourceMappingURL=NodeConnected.d.ts.map

@@ -104,4 +104,3 @@ export interface Column {
     width?: number;
     align?: "right";
 }
-//# sourceMappingURL=types.d.ts.map

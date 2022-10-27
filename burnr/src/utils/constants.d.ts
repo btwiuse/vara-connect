@@ -5,4 +5,3 @@ export declare const POLKA_ACCOUNT_ENDPOINTS: {
     polkastats: string;
 };
 export declare const NETWORK: SimpleProvider;
-//# sourceMappingURL=constants.d.ts.map

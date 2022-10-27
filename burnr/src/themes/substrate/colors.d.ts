@@ -39,4 +39,3 @@ declare const colors: {
     gradient: string;
 };
 export default colors;
-//# sourceMappingURL=colors.d.ts.map

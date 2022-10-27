@@ -6,4 +6,3 @@ interface Props {
 }
 declare const Home: FunctionComponent<Props>;
 export default Home;
-//# sourceMappingURL=Home.d.ts.map

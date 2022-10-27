@@ -9,4 +9,3 @@ export { useLocalStorage } from "./api/useLocalStorage";
  * Component hooks
  */
 export { useBalance } from "./useBalance";
-//# sourceMappingURL=index.d.ts.map
