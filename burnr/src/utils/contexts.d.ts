@@ -1,4 +1,3 @@
-/// <reference types="react" />
 import { AdminCtx, BalanceVisibilityCtx, EvtMgrCtx, EvtTxCtx, CreateAccountCtx } from "./types";
 import { ApiPromise } from "@polkadot/api";
 declare const BalanceVisibleContext: import("react").Context<BalanceVisibilityCtx>;
