@@ -1,6 +1,6 @@
 import "regenerator-runtime/runtime";
 import { ApiPromise } from "@polkadot/api";
-import { ScProvider, WellKnownChain, } from "@polkadot/rpc-provider/substrate-connect";
+import { ScProvider } from "@polkadot/rpc-provider";
 import westmint from "./assets/westend-westmint.json";
 import UI, { emojis } from "./view";
 window.onload = () => {
@@ -9,9 +9,9 @@ window.onload = () => {
     ui.showSyncing();
     void (async () => {
         try {
-            const westendProvider = new ScProvider(WellKnownChain.westend2);
-            const kusamaProvider = new ScProvider(WellKnownChain.ksmcc3);
-            const polkadotProvider = new ScProvider(WellKnownChain.polkadot);
+            const westendProvider = new ScProvider(ScProvider.WellKnownChain.westend2);
+            const kusamaProvider = new ScProvider(ScProvider.WellKnownChain.ksmcc3);
+            const polkadotProvider = new ScProvider(ScProvider.WellKnownChain.polkadot);
             await Promise.all([westendProvider, kusamaProvider, polkadotProvider].map((p) => p.connect()));
             const westend = await ApiPromise.create({ provider: westendProvider });
             const kusama = await ApiPromise.create({ provider: kusamaProvider });
