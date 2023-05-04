@@ -55,14 +55,14 @@ export interface MgrEvent {
     from: string | null;
     to: string;
 }
-export declare type EvtMgrCtx = MgrEvent[];
+export type EvtMgrCtx = MgrEvent[];
 export interface TxEvent {
     withWhom: string;
     extrinsic: string;
     value: string | number;
     status: string | number;
 }
-export declare type EvtTxCtx = TxEvent[];
+export type EvtTxCtx = TxEvent[];
 export interface AccountData extends Codec {
     free: Balance;
     reserved: Balance;

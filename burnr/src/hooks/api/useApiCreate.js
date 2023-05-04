@@ -10,7 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { useEffect, useState } from "react";
 import { ApiPromise } from "@polkadot/api";
 import { logger } from "@polkadot/util";
-import { ScProvider } from "@polkadot/rpc-provider";
+import { ScProvider } from "@polkadot/rpc-provider/substrate-connect";
+import * as Sc from "@substrate/connect";
 import { NETWORK, BURNR_WALLET } from "../../utils/constants";
 import { useIsMountedRef } from "./useIsMountedRef";
 const l = logger(BURNR_WALLET);
@@ -21,7 +22,7 @@ export const useApiCreate = () => {
     useEffect(() => {
         const choseSmoldot = (endpoint) => __awaiter(void 0, void 0, void 0, function* () {
             try {
-                const provider = new ScProvider(endpoint);
+                const provider = new ScProvider(Sc, endpoint);
                 yield provider.connect();
                 const api = yield ApiPromise.create({ provider });
                 l.log(`Burnr is now connected to ${endpoint}`);
