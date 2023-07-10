@@ -57,7 +57,7 @@ const App = ({ className = "" }) => {
         });
         api && callSetters();
     }, [localStorageAccount, setLocalStorageAccount, api]);
-    return (_jsx(BrowserRouter, { children: _jsx("div", Object.assign({ className: `${classes.root} ${className}` }, { children: _jsx(ThemeToggleProvider, { children: _jsx(AccountContext.Provider, Object.assign({ value: { account, setCurrentAccount } }, { children: _jsxs(ErrorBoundary, { children: [_jsx("main", Object.assign({ className: classes.main }, { children: _jsxs(ApiContext.Provider, Object.assign({ value: api }, { children: [_jsx(Head, {}), _jsx(BurnrDivider, {}), _jsx(Home, { account: account, loader: loader }), _jsx(BurnrBG, {})] })) })), _jsx(NavFooter, {})] }) })) }) })) }));
+    return (_jsx(BrowserRouter, { children: _jsx("div", { className: `${classes.root} ${className}`, children: _jsx(ThemeToggleProvider, { children: _jsx(AccountContext.Provider, { value: { account, setCurrentAccount }, children: _jsxs(ErrorBoundary, { children: [_jsx("main", { className: classes.main, children: _jsxs(ApiContext.Provider, { value: api, children: [_jsx(Head, {}), _jsx(BurnrDivider, {}), _jsx(Home, { account: account, loader: loader }), _jsx(BurnrBG, {})] }) }), _jsx(NavFooter, {})] }) }) }) }) }));
 };
 export default App;
 //# sourceMappingURL=App.js.map

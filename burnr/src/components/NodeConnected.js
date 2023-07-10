@@ -51,6 +51,6 @@ export default function NodeConnected() {
         });
         api && getColor(api);
     }, [api, l]);
-    return (_jsx("div", Object.assign({ className: classes.nodeSelectorWrap }, { children: _jsx("div", Object.assign({ className: classes.nodeSelectorInner }, { children: _jsxs(Box, Object.assign({ display: "flex", alignItems: "center", pt: 2.5, pb: 2.5, pl: 2.5, pr: 2.5 }, { children: [_jsx(FiberManualRecordIcon, { style: { fontSize: "16px", marginRight: 4 }, color: fiberColor }), _jsxs(Box, Object.assign({ width: "100%", display: "flex", alignItems: "baseline" }, { children: [_jsx(Typography, Object.assign({ variant: "h4" }, { children: NETWORK.name })), _jsx(Typography, Object.assign({ variant: "body2", className: classes.nodeDesc, color: "textSecondary" }, { children: NETWORK.client }))] }))] })) })) })));
+    return (_jsx("div", { className: classes.nodeSelectorWrap, children: _jsx("div", { className: classes.nodeSelectorInner, children: _jsxs(Box, { display: "flex", alignItems: "center", pt: 2.5, pb: 2.5, pl: 2.5, pr: 2.5, children: [_jsx(FiberManualRecordIcon, { style: { fontSize: "16px", marginRight: 4 }, color: fiberColor }), _jsxs(Box, { width: "100%", display: "flex", alignItems: "baseline", children: [_jsx(Typography, { variant: "h4", children: NETWORK.name }), _jsx(Typography, { variant: "body2", className: classes.nodeDesc, color: "textSecondary", children: NETWORK.client })] })] }) }) }));
 }
 //# sourceMappingURL=NodeConnected.js.map

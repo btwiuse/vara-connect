@@ -11,9 +11,9 @@ const useStyles = makeStyles({
 });
 const LogoSubstrate = ({ theme }) => {
     const classes = useStyles();
-    return (_jsx(Link, Object.assign({ href: "http://substrate.io/", target: "_blank", className: classes.root }, { children: _jsx("img", { alt: "Substrate's Logo", src: theme
+    return (_jsx(Link, { href: "http://substrate.io/", target: "_blank", className: classes.root, children: _jsx("img", { alt: "Substrate's Logo", src: theme
                 ? "./assets/images/logo_substrate.svg"
-                : "./assets/images/logo_substrate_onDark.svg" }) })));
+                : "./assets/images/logo_substrate_onDark.svg" }) }));
 };
 export default LogoSubstrate;
 //# sourceMappingURL=LogoSubstrate.js.map

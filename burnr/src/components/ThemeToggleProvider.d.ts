@@ -1,4 +1,4 @@
 declare const ThemeToggleProvider: ({ children }: {
     children: React.ReactNode;
-}) => JSX.Element;
+}) => import("react/jsx-runtime").JSX.Element;
 export default ThemeToggleProvider;

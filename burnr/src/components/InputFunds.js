@@ -32,17 +32,17 @@ const InputFunds = ({ total, setAmount, currency, hidePercentages = false, }) =>
     const handleFocus = () => {
         setFocus(!focus);
     };
-    return (_jsxs(_Fragment, { children: [_jsx(Box, Object.assign({ marginBottom: 1 }, { children: _jsx(TextField, { id: "SendFundsAmountField", value: showValue, label: "Amount", fullWidth: true, type: "number", placeholder: "0", variant: "outlined", onChange: handleChange, onFocus: handleFocus, onBlur: handleFocus, InputProps: {
+    return (_jsxs(_Fragment, { children: [_jsx(Box, { marginBottom: 1, children: _jsx(TextField, { id: "SendFundsAmountField", value: showValue, label: "Amount", fullWidth: true, type: "number", placeholder: "0", variant: "outlined", onChange: handleChange, onFocus: handleFocus, onBlur: handleFocus, InputProps: {
                         fullWidth: true,
-                        startAdornment: (_jsx(InputAdornment, Object.assign({ position: "start" }, { children: currency }))),
-                    } }) })), !hidePercentages && (_jsx(Grid, Object.assign({ container: true, spacing: 1 }, { children: [
+                        startAdornment: (_jsx(InputAdornment, { position: "start", children: currency })),
+                    } }) }), !hidePercentages && (_jsx(Grid, { container: true, spacing: 1, children: [
                     { label: "25%", value: 0.25 },
                     { label: "50%", value: 0.5 },
                     { label: "75%", value: 0.75 },
                     { label: "100%", value: 1 },
                 ].map((item, index) => {
-                    return (_jsx(Grid, Object.assign({ item: true }, { children: _jsx(Button, Object.assign({ onClick: (e) => handleChange(e, true), variant: "outlined", color: focus ? "primary" : "default", size: "small", value: item.value }, { children: item.label })) }), index));
-                }) })))] }));
+                    return (_jsx(Grid, { item: true, children: _jsx(Button, { onClick: (e) => handleChange(e, true), variant: "outlined", color: focus ? "primary" : "default", size: "small", value: item.value, children: item.label }) }, index));
+                }) }))] }));
 };
 export default InputFunds;
 //# sourceMappingURL=InputFunds.js.map

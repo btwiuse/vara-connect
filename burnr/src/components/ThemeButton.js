@@ -21,7 +21,7 @@ const useStyles = makeStyles((theme) => ({
 const ThemeButton = (_a) => {
     var { theme } = _a, props = __rest(_a, ["theme"]);
     const classes = useStyles();
-    return (_jsx(IconButton, Object.assign({}, props, { className: classes.root }, { children: theme ? _jsx(Brightness3Icon, {}) : _jsx(Brightness7Icon, {}) })));
+    return (_jsx(IconButton, Object.assign({}, props, { className: classes.root, children: theme ? _jsx(Brightness3Icon, {}) : _jsx(Brightness7Icon, {}) })));
 };
 export default ThemeButton;
 //# sourceMappingURL=ThemeButton.js.map

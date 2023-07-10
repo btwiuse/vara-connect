@@ -10,7 +10,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 const Head = () => {
     const classes = useStyles();
-    return (_jsxs(Grid, Object.assign({ container: true, alignItems: "center", className: classes.root }, { children: [_jsx(Grid, Object.assign({ item: true, xs: 6 }, { children: _jsx(Box, Object.assign({ paddingX: 2 }, { children: _jsx(Typography, Object.assign({ variant: "h1" }, { children: "Burnr" })) })) })), _jsx(Grid, Object.assign({ item: true, xs: 6 }, { children: _jsx(NodeConnected, {}) }))] })));
+    return (_jsxs(Grid, { container: true, alignItems: "center", className: classes.root, children: [_jsx(Grid, { item: true, xs: 6, children: _jsx(Box, { paddingX: 2, children: _jsx(Typography, { variant: "h1", children: "Burnr" }) }) }), _jsx(Grid, { item: true, xs: 6, children: _jsx(NodeConnected, {}) })] }));
 };
 export default Head;
 //# sourceMappingURL=Head.js.map

@@ -27,7 +27,7 @@ const PopoverExtrinsic = ({ status, }) => {
         setAnchorEl(null);
     };
     const open = Boolean(anchorEl);
-    return (_jsxs(_Fragment, { children: [_jsxs(IconButton, Object.assign({ onMouseEnter: handlePopoverOpen, onMouseLeave: handlePopoverClose }, { children: [status === 0 && _jsx(CachedIcon, { color: "disabled" }), status === 1 && _jsx(CheckIcon, { color: "action" }), status === 2 && _jsx(ErrorIcon, { color: "error" }), status === 3 && _jsx(CircularProgress, {})] })), _jsx(Popover, Object.assign({ elevation: 2, transitionDuration: 0, id: "mouse-over-popover", className: classes.popover, classes: {
+    return (_jsxs(_Fragment, { children: [_jsxs(IconButton, { onMouseEnter: handlePopoverOpen, onMouseLeave: handlePopoverClose, children: [status === 0 && _jsx(CachedIcon, { color: "disabled" }), status === 1 && _jsx(CheckIcon, { color: "action" }), status === 2 && _jsx(ErrorIcon, { color: "error" }), status === 3 && _jsx(CircularProgress, {})] }), _jsx(Popover, { elevation: 2, transitionDuration: 0, id: "mouse-over-popover", className: classes.popover, classes: {
                     paper: classes.paper,
                 }, open: open, anchorEl: anchorEl, anchorOrigin: {
                     vertical: "top",
@@ -35,7 +35,7 @@ const PopoverExtrinsic = ({ status, }) => {
                 }, transformOrigin: {
                     vertical: "bottom",
                     horizontal: "center",
-                }, onClose: handlePopoverClose, disableRestoreFocus: true }, { children: _jsx(Typography, Object.assign({ variant: "body2" }, { children: "The content of the Popover, link to BlockExplorers" })) }))] }));
+                }, onClose: handlePopoverClose, disableRestoreFocus: true, children: _jsx(Typography, { variant: "body2", children: "The content of the Popover, link to BlockExplorers" }) })] }));
 };
 export default PopoverExtrinsic;
 //# sourceMappingURL=PopoverExtrinsic.js.map

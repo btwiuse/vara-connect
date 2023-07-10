@@ -26,7 +26,7 @@ const BalanceValue = ({ value, isVisible, unit = "", size, style, }) => {
     const isColored = parseInt(fBalance) >= 0;
     const classes = useStyles({ colored: isColored, visible: isVisible });
     const TypographyVariant = size === "large" ? "subtitle1" : "subtitle2";
-    return (_jsx(Box, Object.assign({ component: "span", className: classes.root, style: style }, { children: _jsx(Typography, Object.assign({ variant: TypographyVariant, className: classes.blur }, { children: `${fBalance} ${unit}` })) })));
+    return (_jsx(Box, { component: "span", className: classes.root, style: style, children: _jsx(Typography, { variant: TypographyVariant, className: classes.blur, children: `${fBalance} ${unit}` }) }));
 };
 export default memo(BalanceValue);
 //# sourceMappingURL=BalanceValue.js.map

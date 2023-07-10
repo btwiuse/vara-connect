@@ -28,7 +28,7 @@ const ThemeToggleProvider = ({ children }) => {
         setLocalTheme(selected.toString());
         setTheme(selected);
     };
-    return (_jsxs(ThemeProvider, Object.assign({ theme: appliedTheme }, { children: [_jsx(CssBaseline, {}), _jsxs("div", Object.assign({ className: classes.root }, { children: [_jsx(LogoSubstrate, { theme: theme }), _jsx(ThemeButton, { theme: theme, onClick: () => selectTheme(!theme) })] })), children] })));
+    return (_jsxs(ThemeProvider, { theme: appliedTheme, children: [_jsx(CssBaseline, {}), _jsxs("div", { className: classes.root, children: [_jsx(LogoSubstrate, { theme: theme }), _jsx(ThemeButton, { theme: theme, onClick: () => selectTheme(!theme) })] }), children] }));
 };
 export default ThemeToggleProvider;
 //# sourceMappingURL=ThemeToggleProvider.js.map

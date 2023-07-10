@@ -35,7 +35,7 @@ const AccountBurn = () => {
         setLclStorage(JSON.stringify(userTmp));
         setCurrentAccount(userTmp);
     };
-    return (_jsx(Grid, Object.assign({ container: true, justify: "center", alignItems: "center" }, { children: _jsx(Grid, Object.assign({ item: true }, { children: _jsx(Button, Object.assign({ variant: "contained", size: "large", className: classes.redButton, startIcon: _jsx(WhatshotIcon, {}), onClick: () => burnAndCreate() }, { children: "Burn" })) })) })));
+    return (_jsx(Grid, { container: true, justify: "center", alignItems: "center", children: _jsx(Grid, { item: true, children: _jsx(Button, { variant: "contained", size: "large", className: classes.redButton, startIcon: _jsx(WhatshotIcon, {}), onClick: () => burnAndCreate(), children: "Burn" }) }) }));
 };
 export default AccountBurn;
 //# sourceMappingURL=AccountBurn.js.map

@@ -12,10 +12,10 @@ const InputAddress = ({ setAddress }) => {
         const val = e.currentTarget.value;
         setValue(val);
     };
-    return (_jsx(_Fragment, { children: _jsx(Box, Object.assign({ marginY: 1 }, { children: _jsx(FormControl, Object.assign({ required: true, fullWidth: true }, { children: _jsx(TextField, { label: "Receiver", onChange: handleChangeButton, onFocus: handleChangeButton, onBlur: handleChangeButton, value: value, placeholder: "Westend Address", variant: "outlined", fullWidth: true, InputProps: {
+    return (_jsx(_Fragment, { children: _jsx(Box, { marginY: 1, children: _jsx(FormControl, { required: true, fullWidth: true, children: _jsx(TextField, { label: "Receiver", onChange: handleChangeButton, onFocus: handleChangeButton, onBlur: handleChangeButton, value: value, placeholder: "Westend Address", variant: "outlined", fullWidth: true, InputProps: {
                         spellCheck: "false",
-                        startAdornment: (_jsx(Box, Object.assign({ marginRight: 1 }, { children: !value || value === "" ? (_jsx(Skeleton, { variant: "circle", width: 32, height: 32 })) : (_jsx(Identicon, { size: 32, theme: "polkadot", value: value })) }))),
-                    } }) })) })) }));
+                        startAdornment: (_jsx(Box, { marginRight: 1, children: !value || value === "" ? (_jsx(Skeleton, { variant: "circle", width: 32, height: 32 })) : (_jsx(Identicon, { size: 32, theme: "polkadot", value: value })) })),
+                    } }) }) }) }));
 };
 export default memo(InputAddress);
 //# sourceMappingURL=InputAddress.js.map

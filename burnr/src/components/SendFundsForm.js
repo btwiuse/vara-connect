@@ -74,11 +74,11 @@ const columns = [
 ];
 const Structure = ({ name, rest, fee }) => {
     const { feePriceAndBalance, opacityNone, title, price, priceBalance, priceFee, } = useStyles();
-    return (_jsxs("div", Object.assign({ className: feePriceAndBalance }, { children: [_jsx("div", Object.assign({ className: !fee ? opacityNone : title }, { children: name })), _jsx("div", Object.assign({ className: !fee
+    return (_jsxs("div", { className: feePriceAndBalance, children: [_jsx("div", { className: !fee ? opacityNone : title, children: name }), _jsx("div", { className: !fee
                     ? opacityNone
                     : name === "Fees"
                         ? `${price} ${priceFee}`
-                        : `${price} ${priceBalance}` }, { children: _jsx(Typography, Object.assign({ variant: "subtitle1" }, { children: rest })) }))] })));
+                        : `${price} ${priceBalance}`, children: _jsx(Typography, { variant: "subtitle1", children: rest }) })] }));
 };
 const SendFundsForm = () => {
     var _a;
@@ -205,18 +205,18 @@ const SendFundsForm = () => {
             setErrorMsg("");
         }
     }, [address, amount, fundsIssue]);
-    return (_jsxs(_Fragment, { children: [_jsx(InputAddress, { setAddress: setAddress }), _jsx(InputFunds, { hidePercentages: true, total: maxAmountFull, currency: unit, setAmount: setAmount }), _jsxs(Grid, Object.assign({ item: true, xs: 12, className: classes.infoRow }, { children: [_jsx(Structure, { fee: fee, name: "Fees", rest: fee ? `${prettyBalance(fee)} ${unit}` : "" }), _jsx(Structure, { fee: fee, name: "Balance after transaction", rest: fee
+    return (_jsxs(_Fragment, { children: [_jsx(InputAddress, { setAddress: setAddress }), _jsx(InputFunds, { hidePercentages: true, total: maxAmountFull, currency: unit, setAmount: setAmount }), _jsxs(Grid, { item: true, xs: 12, className: classes.infoRow, children: [_jsx(Structure, { fee: fee, name: "Fees", rest: fee ? `${prettyBalance(fee)} ${unit}` : "" }), _jsx(Structure, { fee: fee, name: "Balance after transaction", rest: fee
                             ? `${prettyBalance(new BN(maxAmountFull).sub(new BN(amount)).sub(fee))} ${unit}`
-                            : "" })] })), _jsx(Button, Object.assign({ type: "submit", variant: "contained", size: "large", color: "secondary", disabled: loading ||
+                            : "" })] }), _jsx(Button, { type: "submit", variant: "contained", size: "large", color: "secondary", disabled: loading ||
                     !parseInt(amount) ||
                     !isValidAddressPolkadotAddress(address) ||
                     account.userAddress === address ||
-                    fundsIssue, onClick: handleSubmit, className: classes.button }, { children: "Send" })), errorMsg && (_jsx(Typography, Object.assign({ variant: "body2", color: "error", className: classes.errorMessage }, { children: errorMsg }))), _jsxs(Box, Object.assign({ mt: 3 }, { children: [countdownNo !== 0 && (_jsx(Table, Object.assign({ size: "small" }, { children: _jsx(HistoryTableRow, { row: {
+                    fundsIssue, onClick: handleSubmit, className: classes.button, children: "Send" }), errorMsg && (_jsx(Typography, { variant: "body2", color: "error", className: classes.errorMessage, children: errorMsg })), _jsxs(Box, { mt: 3, children: [countdownNo !== 0 && (_jsx(Table, { size: "small", children: _jsx(HistoryTableRow, { row: {
                                 withWhom: address,
                                 extrinsic: "Transfer",
                                 value: amount,
                                 status: rowStatus,
-                            }, unit: unit, columns: columns }) }))), _jsx(Typography, Object.assign({ variant: "subtitle2", className: classes.transferInfoMessage }, { children: message })), !loading && countdownNo !== 0 && (_jsx(LinearProgress, { variant: "determinate", value: countdownNo }))] }))] }));
+                            }, unit: unit, columns: columns }) })), _jsx(Typography, { variant: "subtitle2", className: classes.transferInfoMessage, children: message }), !loading && countdownNo !== 0 && (_jsx(LinearProgress, { variant: "determinate", value: countdownNo }))] })] }));
 };
 export default SendFundsForm;
 //# sourceMappingURL=SendFundsForm.js.map

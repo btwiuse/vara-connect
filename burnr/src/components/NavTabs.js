@@ -43,7 +43,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 const TabPanel = (_a) => {
     var { children, value, index } = _a, props = __rest(_a, ["children", "value", "index"]);
-    return (_jsx("div", Object.assign({ hidden: value !== index, id: `tabpanel-${index}` }, props, { children: value === index && _jsx(Box, Object.assign({ p: 2 }, { children: children })) })));
+    return (_jsx("div", Object.assign({ hidden: value !== index, id: `tabpanel-${index}` }, props, { children: value === index && _jsx(Box, { p: 2, children: children }) })));
 };
 const NavTabs = () => {
     var _a;
@@ -67,7 +67,7 @@ const NavTabs = () => {
         }
         setValue(newValue);
     };
-    return (_jsxs(_Fragment, { children: [_jsx(Paper, Object.assign({ square: true }, { children: _jsxs(Tabs, Object.assign({ value: value, onChange: handleChange, variant: "fullWidth", className: classes.rootTabs }, { children: [_jsx(Tab, { label: "Burn Account", icon: _jsx(WhatshotSharpIcon, { fontSize: "small" }), className: classes.tabBurn }), _jsx(Tab, { label: "Receipts", icon: _jsx(SwapHorizSharpIcon, { fontSize: "small" }) }), _jsx(Tab, { label: "Send", icon: _jsx(CallMadeSharpIcon, { fontSize: "small" }) }), _jsx(Tab, { label: "Receive", icon: _jsx(CallReceivedSharpIcon, { fontSize: "small" }) })] })) })), _jsx(BurnrDivider, {}), _jsxs(Paper, Object.assign({ className: classes.root }, { children: [_jsxs(TabPanel, Object.assign({ value: value, index: 1 }, { children: [_jsx(Typography, Object.assign({ variant: "h2", className: classes.rootHeading }, { children: "Transaction History" })), _jsx(HistoryTable, {})] })), _jsxs(TabPanel, Object.assign({ value: value, index: 2 }, { children: [_jsx(Typography, Object.assign({ variant: "h2", className: classes.rootHeading }, { children: "Send Funds" })), _jsx(SendFundsForm, {})] })), _jsxs(TabPanel, Object.assign({ value: value, index: 3 }, { children: [_jsx(Typography, Object.assign({ variant: "h2", className: classes.rootHeading }, { children: "Receive Funds" })), _jsx(ReceiveFundsForm, {})] }))] }))] }));
+    return (_jsxs(_Fragment, { children: [_jsx(Paper, { square: true, children: _jsxs(Tabs, { value: value, onChange: handleChange, variant: "fullWidth", className: classes.rootTabs, children: [_jsx(Tab, { label: "Burn Account", icon: _jsx(WhatshotSharpIcon, { fontSize: "small" }), className: classes.tabBurn }), _jsx(Tab, { label: "Receipts", icon: _jsx(SwapHorizSharpIcon, { fontSize: "small" }) }), _jsx(Tab, { label: "Send", icon: _jsx(CallMadeSharpIcon, { fontSize: "small" }) }), _jsx(Tab, { label: "Receive", icon: _jsx(CallReceivedSharpIcon, { fontSize: "small" }) })] }) }), _jsx(BurnrDivider, {}), _jsxs(Paper, { className: classes.root, children: [_jsxs(TabPanel, { value: value, index: 1, children: [_jsx(Typography, { variant: "h2", className: classes.rootHeading, children: "Transaction History" }), _jsx(HistoryTable, {})] }), _jsxs(TabPanel, { value: value, index: 2, children: [_jsx(Typography, { variant: "h2", className: classes.rootHeading, children: "Send Funds" }), _jsx(SendFundsForm, {})] }), _jsxs(TabPanel, { value: value, index: 3, children: [_jsx(Typography, { variant: "h2", className: classes.rootHeading, children: "Receive Funds" }), _jsx(ReceiveFundsForm, {})] })] })] }));
 };
 export default NavTabs;
 //# sourceMappingURL=NavTabs.js.map

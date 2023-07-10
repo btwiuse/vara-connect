@@ -37,13 +37,13 @@ const HistoryTable = () => {
     const rows = account.userHistory;
     const balanceArr = useBalance((account === null || account === void 0 ? void 0 : account.userAddress) || "");
     const unit = balanceArr[3];
-    return (_jsxs(Table, Object.assign({ size: "small", stickyHeader: true, className: classes.table }, { children: [_jsx(TableHead, { children: _jsx(TableRow, { children: columns.map((column) => (_jsx(TableCell, Object.assign({ align: column.align, style: {
+    return (_jsxs(Table, { size: "small", stickyHeader: true, className: classes.table, children: [_jsx(TableHead, { children: _jsx(TableRow, { children: columns.map((column) => (_jsx(TableCell, { align: column.align, style: {
                             width: column.width,
                             minWidth: column.minWidth,
                             maxWidth: column.maxWidth,
-                        } }, { children: column.label }), column.id))) }) }), _jsx(TableBody, { children: rows.map((row, i) => {
+                        }, children: column.label }, column.id))) }) }), _jsx(TableBody, { children: rows.map((row, i) => {
                     return (_jsx(HistoryTableRow, { unit: unit, row: row, columns: columns }, i));
-                }) })] })));
+                }) })] }));
 };
 export default HistoryTable;
 //# sourceMappingURL=HistoryTable.js.map

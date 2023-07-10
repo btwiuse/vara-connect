@@ -6,11 +6,11 @@ import { TableRow, TableCell } from "@material-ui/core";
 import { AccountCard, BalanceValue, PopoverExtrinsic } from ".";
 const HistoryTableRow = ({ columns, row, unit = "Unit", showStatus = true, }) => {
     const { balanceVisibility } = useContext(BalanceVisibleContext);
-    return (_jsx(TableRow, Object.assign({ hover: true }, { children: columns.map((column) => {
+    return (_jsx(TableRow, { hover: true, children: columns.map((column) => {
             const value = row[column.id];
-            return (_jsxs(TableCell, Object.assign({ align: column.align }, { children: [column.id === "withWhom" && (_jsx(AccountCard, { account: { address: value.toString(), name: "" } })), column.id === "extrinsic" && value, column.id === "value" && // This may look overwhelming but is just for "dump" data until page is fixed
-                        (typeof value === "number" || typeof value === "string") && (_jsx(BalanceValue, { isVisible: balanceVisibility, value: new BN(value), unit: unit })), showStatus && column.id === "status" && (_jsx(PopoverExtrinsic, { status: row.status }))] }), `transaction-${column.id}`));
-        }) }), `transaction`));
+            return (_jsxs(TableCell, { align: column.align, children: [column.id === "withWhom" && (_jsx(AccountCard, { account: { address: value.toString(), name: "" } })), column.id === "extrinsic" && value, column.id === "value" && // This may look overwhelming but is just for "dump" data until page is fixed
+                        (typeof value === "number" || typeof value === "string") && (_jsx(BalanceValue, { isVisible: balanceVisibility, value: new BN(value), unit: unit })), showStatus && column.id === "status" && (_jsx(PopoverExtrinsic, { status: row.status }))] }, `transaction-${column.id}`));
+        }) }, `transaction`));
 };
 export default HistoryTableRow;
 //# sourceMappingURL=HistoryTableRow.js.map
