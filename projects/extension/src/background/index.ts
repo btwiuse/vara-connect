@@ -7,6 +7,7 @@ import { start as smoldotStart } from "smoldot"
 
 import { ToContentScript, ToExtension } from "./protocol"
 import * as environment from "../environment"
+import { SandboxWithHealth } from "./SandboxWithHealth"
 
 // Loads the well-known chains bootnodes from the local storage and returns the well-known
 // chains.
@@ -62,214 +63,183 @@ const loadWellKnownChains = async (): Promise<Map<string, string>> => {
   ])
 }
 
-chrome.runtime.onMessage.addListener(
-  (message: ToExtension, sender, sendResponse) => {
-    switch (message.type) {
-      case "get-well-known-chain": {
-        // TODO: don't load the list every time
-        loadWellKnownChains().then((map) => {
-          const chainSpec = map.get(message.chainName)
-          if (chainSpec) {
-            environment
-              .get({ type: "database", chainName: message.chainName })
-              .then((databaseContent) => {
-                sendResponse({
-                  type: "get-well-known-chain",
-                  found: { chainSpec, databaseContent: databaseContent || "" },
-                } as ToContentScript)
-              })
-          } else {
-            sendResponse({
-              type: "get-well-known-chain",
-              chainName: message.chainName,
-            } as ToContentScript)
-          }
-        })
-
-        // `true` must be returned to indicate that there will be a response.
-        return true
-      }
-
-      case "tab-reset": {
-        environment
-          .remove({ type: "activeChains", tabId: sender.tab!.id! })
-          .then(() => {
-            sendResponse(null)
-          })
-        // `true` must be returned to indicate that there will be a response.
-        return true
-      }
-
-      case "add-chain": {
-        environment
-          .get({ type: "activeChains", tabId: sender.tab!.id! })
-          .then(async (chains) => {
-            if (!chains) chains = []
-
-            chains.push({
-              chainId: message.chainId,
-              isWellKnown: message.isWellKnown,
-              chainName: message.chainSpecChainName,
-              isSyncing: false,
-              peers: 0,
-              tab: {
-                id: sender.tab!.id!,
-                url: sender.tab!.url!,
-              },
-            })
-
-            await environment.set(
-              { type: "activeChains", tabId: sender.tab!.id! },
-              chains,
-            )
-            sendResponse(null)
-          })
-        // `true` must be returned to indicate that there will be a response.
-        return true
-      }
-
-      case "chain-info-update": {
-        environment
-          .get({ type: "activeChains", tabId: sender.tab!.id! })
-          .then(async (chains) => {
-            if (!chains) return
-
-            const pos = chains.findIndex(
-              (c) =>
-                c.tab.id === sender.tab!.id! && c.chainId === message.chainId,
-            )
-            if (pos !== -1) {
-              chains[pos].peers = message.peers
-              chains[pos].bestBlockHeight = message.bestBlockNumber
-            }
-
-            await environment.set(
-              { type: "activeChains", tabId: sender.tab!.id! },
-              chains,
-            )
-            sendResponse(null)
-          })
-        // `true` must be returned to indicate that there will be a response.
-        return true
-      }
-
-      case "database-content": {
-        environment.set(
-          { type: "database", chainName: message.chainName },
-          message.databaseContent,
-        )
-        sendResponse(null)
-        return false
-      }
-
-      case "remove-chain": {
-        environment
-          .get({ type: "activeChains", tabId: sender.tab!.id! })
-          .then(async (chains) => {
-            if (!chains) return
-            const pos = chains.findIndex(
-              (c) =>
-                c.tab.id === sender.tab!.id! && c.chainId === message.chainId,
-            )
-            if (pos !== -1) chains.splice(pos, 1)
-            await environment.set(
-              { type: "activeChains", tabId: sender.tab!.id! },
-              chains,
-            )
-            sendResponse(null)
-          })
-        // `true` must be returned to indicate that there will be a response.
-        return true
-      }
+// The manager can be in multiple different states: currently initializing, operational, or
+// crashed.
+// While initializing, the `whenInitFinished` promise can be used to know when the initialization
+// is over and the manager is now operational or crashed.
+let manager:
+  | { state: "initializing"; whenInitFinished: Promise<void> }
+  | {
+      state: "ready"
+      manager: SandboxWithHealth<chrome.runtime.Port | null>
     }
-  },
-)
-
-const updateDatabases = async () => {
-  const wellKnownChains = await loadWellKnownChains()
-  const client = smoldotStart({
-    cpuRateLimit: 0.5, // Politely limit the CPU usage of the smoldot background worker.
-  })
-
-  let promises = []
-
-  for (const [key, value] of wellKnownChains) {
-    let databaseContent = await environment.get({
-      type: "database",
-      chainName: key,
-    })
-
-    promises.push(
-      new Promise<void>((resolve) => {
-        client
-          .addChain({ chainSpec: value, databaseContent })
-          .then(async (chain) => {
-            chain.sendJsonRpc(
-              `{"jsonrpc":"2.0","id":"1","method":"chainHead_unstable_follow","params":[true]}`,
-            )
-
-            while (true) {
-              const response = JSON.parse(await chain.nextJsonRpcResponse())
-              if (response?.params?.result?.event === "initialized") {
-                chain.sendJsonRpc(
-                  JSON.stringify({
-                    jsonrpc: "2.0",
-                    id: "2",
-                    method: "chainHead_unstable_finalizedDatabase",
-                    params: [
-                      // TODO: calculate this better
-                      chrome.storage.local.QUOTA_BYTES / wellKnownChains.size,
-                    ],
-                  }),
-                )
-              }
-              if (response?.id === "2") {
-                await environment.set(
-                  { type: "database", chainName: key },
-                  response.result,
-                )
-                resolve()
-                break
-              }
-            }
-          })
-      }),
-    )
-  }
-
-  Promise.all(promises)
-    .then(() => {
-      // Once the database content is saved in the localStorage for all the chains
-      // then terminate the client
-      console.log("All databases are updated. Light Client is terminated.")
-    })
-    .finally(() => client.terminate())
+  | { state: "crashed"; error: string } = {
+  state: "initializing",
+  whenInitFinished: (async () => {})(),
 }
 
-updateDatabases().catch((err) =>
-  console.error(`Error occurred during database update: ${err}`),
-)
+manager = {
+  state: "initializing",
+  whenInitFinished: (async () => {
+    try {
+      const wellKnownChains = await loadWellKnownChains()
 
-chrome.alarms.create("DatabaseContentAlarm", {
-  periodInMinutes: 1440, // 24 hours
-})
+      // Start initializing a `SandboxWithHealth`.
+      // This initialization operation shouldn't take more than a few dozen milliseconds, but we
+      // still need to properly handle situations where initialization isn't finished yet.
+      const managerInit = new SandboxWithHealth<chrome.runtime.Port | null>(
+        wellKnownChains,
+        smoldotStart({
+          // Because we are in the context of a web page, trying to open TCP connections or non-secure
+          // WebSocket connections to addresses other than localhost will lead to errors. As such, we
+          // disable these types of connections ahead of time.
+          forbidTcp: true,
+          forbidNonLocalWs: true,
 
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "DatabaseContentAlarm")
-    updateDatabases().catch((err) =>
-      console.error(`Error occurred during database update: ${err}`),
-    )
-})
+          // In order to be polite, we limit smoldot to 50% CPU consumption.
+          cpuRateLimit: 0.5,
 
-chrome.tabs.onRemoved.addListener((tabId) => {
-  environment.remove({ type: "activeChains", tabId })
-})
+          maxLogLevel: 4,
+          logCallback: (level, target, message) => {
+            // These logs are shown directly in the web page's console.
+            // The first parameter of the methods of `console` has some printf-like substitution
+            // capabilities. We don't really need to use this, but not using it means that the logs
+            // might not get printed correctly if they contain `%`.
+            if (level <= 1) {
+              console.error(
+                "[substrate-connect-extension] [%s] %s",
+                target,
+                message,
+              )
+            } else if (level === 2) {
+              console.warn(
+                "[substrate-connect-extension] [%s] %s",
+                target,
+                message,
+              )
+            } else if (level === 3) {
+              console.info(
+                "[substrate-connect-extension] [%s] %s",
+                target,
+                message,
+              )
+            } else if (level === 4) {
+              console.debug(
+                "[substrate-connect-extension] [%s] %s",
+                target,
+                message,
+              )
+            } else {
+              console.trace(
+                "[substrate-connect-extension] [%s] %s",
+                target,
+                message,
+              )
+            }
+          },
+        }),
+      )
 
-// Callback called when the browser starts.
-// Note: technically, this is triggered when a new profile is started. But since each profile has
-// its own local storage, this fits the mental model of "browser starts".
-chrome.runtime.onStartup.addListener(() => {
-  // Note: there is clearly a race condition here because we can start processing tab messages
-  // before the promise has finished.
-  environment.clearAllActiveChains()
+      managerInit.addSandbox(null)
+
+      const startDbQueries = []
+
+      for (const key of wellKnownChains.keys()) {
+        const dbContent = await new Promise<string | undefined>((res) =>
+          chrome.storage.local.get([key], (val) => {
+            return res(val[key] as string)
+          }),
+        )
+
+        managerInit.sandboxMessage(null, {
+          origin: "trusted-user",
+          chainId: key,
+          chainName: key,
+          type: "add-well-known-chain-with-db",
+          databaseContent: dbContent,
+        })
+        // Wait for the manager to confirm the chain creation.
+        while (true) {
+          const msg = await managerInit.nextSandboxMessage(null)
+          if (msg.type === "error" && msg.chainId === key) {
+            throw new Error(
+              "Failed to initialize well-known chain: " + msg.errorMessage,
+            )
+          }
+          if (msg.type === "chain-ready" && msg.chainId === key) {
+            break
+          }
+        }
+
+        if (!dbContent) startDbQueries.push(key)
+      }
+
+      manager = { state: "ready", manager: managerInit }
+      console.log("sent")
+    } catch (error: any) {
+      const msg =
+        error instanceof Error
+          ? error.toString()
+          : "Unknown error at initialization"
+      manager = { state: "crashed", error: msg }
+    }
+  })(),
+}
+
+// Handle new port connections.
+//
+// Whenever a tab starts using the substrate-connect extension, it will open a port. This is caught
+// here.
+chrome.runtime.onConnect.addListener((port) => {
+  // The difficulty here is that the manager might not have completely finished its
+  // initialization. However, we need to immediately add listeners to `port.onMessage` and
+  // to `port.onDisconnect` in order to be sure to not miss events.
+
+  // To handle this properly, we hold a `Promise` here, and update it every time we do
+  // something relevant to that port, making sure that everything happens in the correct order.
+
+  // Note that as long as the manager hasn't finished initializing, the chain of promises will
+  // continue to grow indefinitely. While this is a problem *in theory*, in practice the manager
+  // initialization shouldn't take more than a few dozen milliseconds and it is actually unlikely
+  // for any message to arrive at all.
+
+  let managerPromise = (async () => {
+    while (true) {
+      if (manager.state === "initializing") {
+        await manager.whenInitFinished
+      } else if (manager.state === "ready") {
+        return manager.manager
+      } else if (manager.state === "crashed") {
+        return undefined
+      }
+    }
+  })()
+
+  let managerWithSandbox = managerPromise.then((readyManager) => {
+    if (!readyManager) return readyManager
+
+    readyManager.addSandbox(port)
+
+    console.log("added", port)
+    return readyManager
+  })
+
+  port.onMessage.addListener((message: ToExtension) => {
+    console.log("message", message)
+    managerWithSandbox = managerWithSandbox.then((manager) => {
+      console.log("manager", manager)
+
+      return manager
+    })
+  })
+
+  port.onDisconnect.addListener(() => {
+    managerWithSandbox = managerWithSandbox.then((manager) => {
+      if (!manager) return manager
+
+      manager.deleteSandbox(port)
+      // notifyAllChainsChangedListeners()
+      return manager
+    })
+  })
 })
