@@ -3,11 +3,14 @@ import ksmcc3 from "../../public/assets/ksmcc3.json"
 import polkadot from "../../public/assets/polkadot.json"
 import rococo_v2_2 from "../../public/assets/rococo_v2_2.json"
 
-import { start as smoldotStart } from "smoldot"
+import { start as startSmoldotClient } from "smoldot"
 
-import { ToContentScript, ToExtension } from "./protocol"
 import * as environment from "../environment"
 import { SandboxWithHealth } from "./SandboxWithHealth"
+import {
+  ToApplication,
+  ToExtension,
+} from "@substrate/connect-extension-protocol"
 
 // Loads the well-known chains bootnodes from the local storage and returns the well-known
 // chains.
@@ -56,11 +59,38 @@ const loadWellKnownChains = async (): Promise<Map<string, string>> => {
   // enum from `@substrate/connect` but instead manually make the list in that enum match
   // the list present here.
   return new Map<string, string>([
-    [polkadot_cp.id, JSON.stringify(polkadot_cp)],
-    [ksmcc3_cp.id, JSON.stringify(ksmcc3_cp)],
-    [rococo_cp.id, JSON.stringify(rococo_cp)],
+    // [polkadot_cp.id, JSON.stringify(polkadot_cp)],
+    // [ksmcc3_cp.id, JSON.stringify(ksmcc3_cp)],
+    // [rococo_cp.id, JSON.stringify(rococo_cp)],
     [westend2_cp.id, JSON.stringify(westend2_cp)],
   ])
+}
+
+// Listeners that must be notified when the `get chains()` getter would return a different value.
+const chainsChangedListeners: Set<() => void> = new Set()
+const notifyAllChainsChangedListeners = () => {
+  chainsChangedListeners.forEach((l) => {
+    try {
+      l()
+    } catch (e) {
+      console.error("Uncaught exception in onChainsChanged callback:", e)
+    }
+  })
+}
+// Listeners that must be notified when the `get smoldotCrashError()` getter would return a
+// different value.
+const smoldotCrashErrorChangedListeners: Set<() => void> = new Set()
+const notifyAllSmoldotCrashErrorChangedListeners = () => {
+  smoldotCrashErrorChangedListeners.forEach((l) => {
+    try {
+      l()
+    } catch (e) {
+      console.error(
+        "Uncaught exception in onSmoldotCrashErrorChanged callback:",
+        e,
+      )
+    }
+  })
 }
 
 // The manager can be in multiple different states: currently initializing, operational, or
@@ -89,7 +119,7 @@ manager = {
       // still need to properly handle situations where initialization isn't finished yet.
       const managerInit = new SandboxWithHealth<chrome.runtime.Port | null>(
         wellKnownChains,
-        smoldotStart({
+        startSmoldotClient({
           // Because we are in the context of a web page, trying to open TCP connections or non-secure
           // WebSocket connections to addresses other than localhost will lead to errors. As such, we
           // disable these types of connections ahead of time.
@@ -174,9 +204,58 @@ manager = {
         if (!dbContent) startDbQueries.push(key)
       }
 
+      // Query the databases of chains whose database was unknown.
+      // This needs to be done after all well-known chains are initialized, otherwise the code
+      // right above that waits for chains to be ready might catch the response to the database
+      // query.
+      for (const key of startDbQueries)
+        managerInit.sandboxMessage(null, {
+          origin: "trusted-user",
+          type: "database-content",
+          chainId: key,
+          sizeLimit: chrome.storage.local.QUOTA_BYTES / wellKnownChains.size,
+        })
+
+        // TODO: stop this task if the manager crashes?
+      ;(async () => {
+        while (true) {
+          const message = await managerInit.nextSandboxMessage(null)
+          if (
+            message.type === "chains-status-changed" ||
+            message.type === "error"
+          ) {
+            notifyAllChainsChangedListeners()
+          } else if (message.type === "database-content") {
+            chrome.storage.local.set({
+              [message.chainId]: message.databaseContent,
+            })
+          }
+        }
+      })()
+
+      // Create an alarm that will periodically save the content of the database of the well-known
+      // chains.
+      chrome.alarms.onAlarm.addListener(async (alarm) => {
+        if (alarm.name === "DatabaseContentAlarm") {
+          for (const [key] of wellKnownChains)
+            managerInit.sandboxMessage(null, {
+              origin: "trusted-user",
+              type: "database-content",
+              chainId: key,
+              sizeLimit:
+                chrome.storage.local.QUOTA_BYTES / wellKnownChains.size,
+            })
+        }
+      })
+      chrome.alarms.create("DatabaseContentAlarm", {
+        periodInMinutes: 1440,
+      })
+
+      // Success. Update the state and notify listeners.
+      notifyAllChainsChangedListeners()
       manager = { state: "ready", manager: managerInit }
-      console.log("sent")
     } catch (error: any) {
+      notifyAllSmoldotCrashErrorChangedListeners()
       const msg =
         error instanceof Error
           ? error.toString()
@@ -202,7 +281,6 @@ chrome.runtime.onConnect.addListener((port) => {
   // continue to grow indefinitely. While this is a problem *in theory*, in practice the manager
   // initialization shouldn't take more than a few dozen milliseconds and it is actually unlikely
   // for any message to arrive at all.
-
   let managerPromise = (async () => {
     while (true) {
       if (manager.state === "initializing") {
@@ -217,20 +295,87 @@ chrome.runtime.onConnect.addListener((port) => {
 
   let managerWithSandbox = managerPromise.then((readyManager) => {
     if (!readyManager) return readyManager
-
     readyManager.addSandbox(port)
 
-    console.log("added", port)
+    // This stops looping through "readyManager"
+    ;(async () => {
+      console.log("start looping")
+      while (true) {
+        let message
+        try {
+          message = await readyManager.nextSandboxMessage(port)
+          console.log(
+            "--- await readyManager.nextSandboxMessage(port) ------>>>>>>>>> ",
+            message,
+          )
+        } catch (error) {
+          console.log("ER-R-O-R", error)
+          // An error is thrown by `nextSandboxMessage` if the sandbox is destroyed.
+          break
+        }
+
+        if (message.type === "chains-status-changed") {
+          notifyAllChainsChangedListeners()
+        } else if (message.type === "database-content") {
+          // We never ask for the database content of a chain added through a port.
+        } else {
+          if (message.type === "chain-ready" || message.type === "error")
+            notifyAllChainsChangedListeners()
+
+          // We make sure that the message is indeed of type `ToApplication`.
+          const messageCorrectType: ToApplication = message
+          console.log("--- ToApplication = message >>>>>> ", message)
+          port.postMessage(messageCorrectType)
+
+          // If an error happened, this might be an indication that the manager has crashed.
+          // If that is the case, we need to notify the UI and restart everything.
+          if (message.type === "error") {
+            const error = readyManager.hasCrashed
+            if (error) {
+              manager = { state: "crashed", error }
+              notifyAllSmoldotCrashErrorChangedListeners()
+              notifyAllChainsChangedListeners()
+            }
+          }
+        }
+      }
+    })()
+
     return readyManager
   })
 
   port.onMessage.addListener((message: ToExtension) => {
-    console.log("message", message)
-    managerWithSandbox = managerWithSandbox.then((manager) => {
-      console.log("manager", manager)
-
-      return manager
-    })
+    managerWithSandbox = managerWithSandbox.then(
+      (manager: SandboxWithHealth<chrome.runtime.Port | null> | undefined) => {
+        if (manager) {
+          manager.sandboxMessage(port, message)
+          if (
+            message.type === "add-chain" ||
+            message.type === "add-well-known-chain" ||
+            message.type === "remove-chain"
+          ) {
+            notifyAllChainsChangedListeners()
+          }
+        } else {
+          console.log("message.type ===> ", message.type)
+          // If the page wants to send a message while the manager has crashed, we instantly
+          // return an error.
+          if (
+            message.type === "add-chain" ||
+            message.type === "add-well-known-chain"
+          ) {
+            const msg: ToApplication = {
+              origin: "substrate-connect-extension",
+              type: "error",
+              chainId: message.chainId,
+              errorMessage: "Smoldot has crashed",
+            }
+            port.postMessage(msg)
+          }
+        }
+        return manager
+      },
+    )
   })
 
   port.onDisconnect.addListener(() => {
@@ -238,7 +383,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (!manager) return manager
 
       manager.deleteSandbox(port)
-      // notifyAllChainsChangedListeners()
+      notifyAllChainsChangedListeners()
       return manager
     })
   })

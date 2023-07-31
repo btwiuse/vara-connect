@@ -1,10 +1,13 @@
-import { ToApplication } from "@substrate/connect-extension-protocol"
+import {
+  ToApplication,
+  ToExtension,
+} from "@substrate/connect-extension-protocol"
 import {
   Client as SmoldotClient,
   Chain as SmoldotChain,
   CrashError,
 } from "smoldot"
-import { SandboxIF, ToOutside } from "./types"
+import { ReadyChain, SandboxIF, ToOutside, ToSandbox } from "./types"
 import createAsyncFifoQueue from "./Stream"
 
 export class Sandbox<SandboxId> {
@@ -19,8 +22,16 @@ export class Sandbox<SandboxId> {
   ) {
     this.#wellKnownChainSpecs = wellKnownChainSpecs
     this.#smoldotClient = smoldotClient
+  }
 
-    console.log("Sandox.ts")
+  /**
+   * Returns a string error message if the underlying client has crashed in the past. Returns
+   * `undefined` if it hasn't crashed.
+   *
+   * A crash is non-reversible. The only solution is to rebuild a new manager.
+   */
+  get hasCrashed(): string | undefined {
+    return this.#hasCrashed
   }
 
   /**
@@ -80,7 +91,305 @@ export class Sandbox<SandboxId> {
   ): Promise<ToApplication | ToOutside> {
     const sandbox = this.#sandboxes.get(sandboxId)!
     const message = await sandbox.pullMessagesQueue()
+    console.log("< = = = = = pull", message)
     if (message === null) throw new Error("Sandbox has been destroyed")
     return message
   }
+
+  /**
+   * Injects a message into the given sandbox.
+   *
+   * The message and the behaviour of this function conform to the `connect-extension-protocol` or
+   * to the {@link ToSandbox} extension defined in this module.
+   *
+   * @throws Throws an exception if the ̀`sandboxId` isn't valid.
+   */
+  sandboxMessage(sandboxId: SandboxId, message: ToExtension | ToSandbox) {
+    // It is illegal to call this function with an invalid `sandboxId`.
+    const sandbox = this.#sandboxes.get(sandboxId)!
+    switch (message.type) {
+      case "rpc": {
+        const chain = sandbox.chains.get(message.chainId)
+        // As documented in the protocol, RPC messages concerning an invalid chainId are simply
+        // ignored.
+        if (!chain) return
+
+        // Check whether chain is ready yet
+        if (!chain.isReady) {
+          sandbox.pushMessagesQueue({
+            origin: "substrate-connect-extension",
+            type: "error",
+            chainId: message.chainId,
+            errorMessage: "Received RPC message while chain isn't ready yet",
+          })
+          return
+        }
+
+        // Everything is green for this JSON-RPC message
+
+        // If `sendJsonRpc` throws an exception, we kill all chains. This can only happen either
+        // in case of a crash in smoldot or a bug in substrate-connect.
+        try {
+          console.log("send to smoldotChain = = = = = > > > ", message.chainId)
+          chain.smoldotChain.sendJsonRpc(message.jsonRpcMessage)
+        } catch (error) {
+          const errorMsg =
+            "Internal error in smoldot: " +
+            (error instanceof Error ? error.toString() : "(unknown)")
+          this.#resetAllChains(errorMsg)
+          this.#hasCrashed = errorMsg
+          return
+        }
+
+        break
+      }
+
+      case "add-chain":
+      case "add-well-known-chain":
+      case "add-well-known-chain-with-db": {
+        // Refuse the chain addition if the `chainId` is already in use.
+        if (sandbox.chains.has(message.chainId)) {
+          sandbox.pushMessagesQueue({
+            origin: "substrate-connect-extension",
+            type: "error",
+            chainId: message.chainId,
+            errorMessage: "Requested chainId already in use",
+          })
+          return
+        }
+
+        // Refuse the chain addition for invalid well-known chain names.
+        if (
+          message.type === "add-well-known-chain" ||
+          message.type === "add-well-known-chain-with-db"
+        ) {
+          console.log("1", this.#wellKnownChainSpecs.has(message.chainName))
+          if (!this.#wellKnownChainSpecs.has(message.chainName)) {
+            sandbox.pushMessagesQueue({
+              origin: "substrate-connect-extension",
+              type: "error",
+              chainId: message.chainId,
+              errorMessage: "Unknown well-known chain",
+            })
+            return
+          }
+        }
+
+        // Start the initialization of the chain in the background.
+        const chainId = message.chainId
+        const chainSpec =
+          message.type === "add-chain"
+            ? message.chainSpec
+            : this.#wellKnownChainSpecs.get(message.chainName)!
+        const databaseContent =
+          message.type === "add-well-known-chain-with-db"
+            ? message.databaseContent
+            : undefined
+
+        const chainInitialization: Promise<SmoldotChain> =
+          this.#smoldotClient.addChain({
+            chainSpec,
+            databaseContent,
+            potentialRelayChains:
+              message.type === "add-chain"
+                ? message.potentialRelayChainIds.flatMap(
+                    (untrustedChainId): SmoldotChain[] => {
+                      const chain = sandbox.chains.get(untrustedChainId)
+                      return chain && chain.isReady ? [chain.smoldotChain] : []
+                    },
+                  )
+                : [],
+          })
+
+        // Insert the promise in `sandbox.chains` so that the state machine is aware of the
+        // fact that there is a chain with this ID currently initializing.
+        const name = nameFromSpec(chainSpec)
+
+        console.log("name from spec", name)
+        sandbox.chains.set(message.chainId, {
+          isReady: false,
+          smoldotChain: chainInitialization,
+          name,
+        })
+
+        console.log("name from spec", sandbox.chains)
+
+        // Spawn in the background an async function to react to the initialization finishing.
+        this.#handleChainInitializationFinished(
+          sandboxId,
+          chainId,
+          chainInitialization,
+          name,
+        )
+        break
+      }
+
+      //   case "remove-chain": {
+      //     const chain = sandbox.chains.get(message.chainId)
+      //     // As documented in the protocol, remove-chain messages concerning an invalid chainId are
+      //     // simply ignored.
+      //     if (!chain) return
+
+      //     if (chain.isReady) {
+      //       try {
+      //         chain.smoldotChain.remove()
+      //       } catch (error) {}
+      //     }
+
+      //     // If the chain isn't ready yet, the function that asynchronously reacts to the chain
+      //     // initialization being finished will remove it.
+
+      //     sandbox.chains.delete(message.chainId)
+      //     break
+      //   }
+
+      //   case "database-content": {
+      //     const chain = sandbox.chains.get(message.chainId)
+      //     // As documented, messages concerning an invalid chainId are simply ignored.
+      //     if (!chain) return
+
+      //     // Check whether chain is ready yet
+      //     if (!chain.isReady) {
+      //       sandbox.pushMessagesQueue({
+      //         origin: "substrate-connect-extension",
+      //         type: "error",
+      //         chainId: message.chainId,
+      //         errorMessage:
+      //           "Received database-content message while chain isn't ready yet",
+      //       })
+      //       return
+      //     }
+
+      //     chain.smoldotChain
+      //       .databaseContent(message.sizeLimit)
+      //       .then((databaseContent) => {
+      //         // Make sure that the chain hasn't been removed in between.
+      //         if (!sandbox.chains.has(message.chainId)) return
+
+      //         sandbox.pushMessagesQueue({
+      //           origin: "connection-manager",
+      //           type: "database-content",
+      //           chainId: message.chainId,
+      //           databaseContent,
+      //         })
+      //       })
+      //       .catch((_error) => {})
+      //     break
+      //   }
+      // }
+    }
+  }
+
+  /**
+   * Waits until the given `chainInitialization` is finished (successfully or not), then updates
+   * the given `sandboxId`/`chainId` in `this`.
+   *
+   * If the given `sandboxId`/`chainId` stored in `this` doesn't exist anymore or doesn't match
+   * `chainInitialization`, this function assumes that we're no longer interested in this chain
+   * and discards the newly-created chain.
+   */
+  async #handleChainInitializationFinished(
+    sandboxId: SandboxId,
+    chainId: string,
+    chainInitialization: Promise<SmoldotChain>,
+    name: string,
+  ): Promise<void> {
+    try {
+      const chain = await chainInitialization
+
+      // Because the chain initialization might have taken a long time, we first need to
+      // check whether the chain that we're initializing is still in `this`, as it might
+      // have been removed by various other functions if it no longer interests us.
+      const sandbox = this.#sandboxes.get(sandboxId)
+      if (
+        !sandbox ||
+        !(sandbox.chains.get(chainId)?.smoldotChain === chainInitialization)
+      ) {
+        try {
+          chain.remove()
+        } catch (error) {}
+        return
+      }
+
+      const smoldotChain: SmoldotChain = chain
+      const readyChain: ReadyChain = {
+        isReady: true,
+        name,
+        smoldotChain,
+        isSyncing: true,
+        peers: 0,
+      }
+
+      console.log("chainId, readyChain", chainId, readyChain)
+
+      sandbox.chains.set(chainId, readyChain)
+      sandbox.pushMessagesQueue({
+        origin: "substrate-connect-extension",
+        type: "chain-ready",
+        chainId,
+      })
+    } catch (err) {
+      if (err instanceof CrashError) this.#hasCrashed = err.message
+
+      const error =
+        err instanceof Error ? err.message : "Unknown error when adding chain"
+
+      // Because the chain initialization might have taken a long time, we first need to
+      // check whether the chain that we're initializing is still in `this`, as it might
+      // have been removed by various other functions if it no longer interests us.
+      const sandbox = this.#sandboxes.get(sandboxId)
+      if (
+        !sandbox ||
+        !(sandbox.chains.get(chainId)?.smoldotChain === chainInitialization)
+      ) {
+        return
+      }
+
+      sandbox.chains.delete(chainId)
+      sandbox.pushMessagesQueue({
+        origin: "substrate-connect-extension",
+        type: "error",
+        chainId,
+        errorMessage: error,
+      })
+    }
+  }
+
+  /**
+   * Destroys all the chains of all the sandboxes. The error message passed as parameter will be
+   * sent to indicate what happened.
+   */
+  #resetAllChains(errorMessage: string) {
+    for (const sandboxTuple of this.#sandboxes) {
+      const sandbox = sandboxTuple[1] // A stupid lint prevents us from doing `[_, sandbox]` above
+      for (const [chainId, chain] of sandbox.chains) {
+        sandbox.chains.delete(chainId)
+        sandbox.pushMessagesQueue({
+          origin: "substrate-connect-extension",
+          type: "error",
+          chainId,
+          errorMessage,
+        })
+
+        if (chain.isReady) {
+          try {
+            chain.smoldotChain.remove()
+          } catch (error) {}
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Returns the `name` field of the given chain specification, or "Unknown" if the chain
+ * specification is invalid or is missing the field.
+ */
+const nameFromSpec = (chainSpec: string): string => {
+  // TODO: consider using a streaming parser in order to avoid allocating the memory for the entire spec
+  try {
+    const value = JSON.parse(chainSpec).name!
+    if (typeof value === "string") return value
+  } catch (_error) {}
+  return "Unknown"
 }

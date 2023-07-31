@@ -53,6 +53,9 @@ export class ExtensionMessageRouter {
 
   #handleMessage = (msg: MessageEvent): void => {
     const data = msg.data
+
+    if (data?.origin?.startsWith("substrate")) console.log("!!! => ", data)
+
     if (!data.origin || data.origin !== EXTENSION_PROVIDER_ORIGIN) {
       return
     }
@@ -65,6 +68,7 @@ export class ExtensionMessageRouter {
 
     if (data.type === "add-well-known-chain" || data.type === "add-chain") {
       this.#chainIds.add(data.chainId)
+      console.log("content: THIS CHAINSID", this.#chainIds)
     }
 
     if (data.type === "remove-chain") this.#chainIds.delete(data.chainId)

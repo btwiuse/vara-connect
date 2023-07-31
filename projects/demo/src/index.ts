@@ -15,9 +15,10 @@ window.onload = () => {
       const kusamaProvider = new ScProvider(Sc, Sc.WellKnownChain.ksmcc3)
       const polkadotProvider = new ScProvider(Sc, Sc.WellKnownChain.polkadot)
       await Promise.all(
-        [westendProvider, kusamaProvider, polkadotProvider].map((p) =>
-          p.connect(),
-        ),
+        [
+          westendProvider,
+          // , kusamaProvider, polkadotProvider
+        ].map((p) => p.connect()),
       )
       const westend = await ApiPromise.create({ provider: westendProvider })
       const kusama = await ApiPromise.create({ provider: kusamaProvider })
@@ -58,45 +59,48 @@ window.onload = () => {
         }
       }
 
-      await Promise.all([westendFnc(), kusamaFnc(), polkadotFnc()])
-
-      const westmintProvider = new ScProvider(
-        Sc,
-        JSON.stringify(westmint),
-        westendProvider,
-      )
-      await westmintProvider.connect()
-      const api = await ApiPromise.create({ provider: westmintProvider })
-
-      const [chain, nodeName, nodeVersion, properties] = await Promise.all([
-        api.rpc.system.chain(),
-        api.rpc.system.name(),
-        api.rpc.system.version(),
-        api.rpc.system.properties(),
+      await Promise.all([
+        westendFnc(),
+        // , kusamaFnc(), polkadotFnc()
       ])
-      const header = await api.rpc.chain.getHeader()
-      const chainName = await api.rpc.system.chain()
 
-      // Show chain constants - from chain spec
-      ui.log(
-        `${emojis.seedling} Light client ready - Using ${chain} - ${nodeName}: ${nodeVersion}`,
-        true,
-      )
-      ui.log(
-        `${emojis.info} Connected to ${chainName}: syncing will start at block #${header.number}`,
-      )
-      ui.log(
-        `${emojis.chequeredFlag} Token decimals: ${properties["tokenDecimals"]} - symbol: ${properties["tokenSymbol"]}`,
-      )
-      ui.log(
-        `${emojis.chequeredFlag} Genesis hash is ${api.genesisHash.toHex()}`,
-      )
+      // const westmintProvider = new ScProvider(
+      //   Sc,
+      //   JSON.stringify(westmint),
+      //   westendProvider,
+      // )
+      // await westmintProvider.connect()
+      // const api = await ApiPromise.create({ provider: westmintProvider })
 
-      // Show how many peers we are syncing with
-      const health = await api.rpc.system.health()
-      const peers =
-        health.peers.toNumber() === 1 ? "1 peer" : `${health.peers} peers`
-      ui.log(`${emojis.stethoscope} Parachain is syncing with ${peers}`)
+      // const [chain, nodeName, nodeVersion, properties] = await Promise.all([
+      //   api.rpc.system.chain(),
+      //   api.rpc.system.name(),
+      //   api.rpc.system.version(),
+      //   api.rpc.system.properties(),
+      // ])
+      // const header = await api.rpc.chain.getHeader()
+      // const chainName = await api.rpc.system.chain()
+
+      // // Show chain constants - from chain spec
+      // ui.log(
+      //   `${emojis.seedling} Light client ready - Using ${chain} - ${nodeName}: ${nodeVersion}`,
+      //   true,
+      // )
+      // ui.log(
+      //   `${emojis.info} Connected to ${chainName}: syncing will start at block #${header.number}`,
+      // )
+      // ui.log(
+      //   `${emojis.chequeredFlag} Token decimals: ${properties["tokenDecimals"]} - symbol: ${properties["tokenSymbol"]}`,
+      // )
+      // ui.log(
+      //   `${emojis.chequeredFlag} Genesis hash is ${api.genesisHash.toHex()}`,
+      // )
+
+      // // Show how many peers we are syncing with
+      // const health = await api.rpc.system.health()
+      // const peers =
+      //   health.peers.toNumber() === 1 ? "1 peer" : `${health.peers} peers`
+      // ui.log(`${emojis.stethoscope} Parachain is syncing with ${peers}`)
 
       // Check the state of syncing every 2s and update the syncing state message
       //
@@ -108,14 +112,14 @@ window.onload = () => {
           setTimeout(res, ms)
         })
       const waitForChainToSync = async () => {
-        const health = await api.rpc.system.health()
-        if (health.isSyncing.eq(false)) {
-          ui.showSynced()
-        } else {
-          ui.showSyncing()
-          await wait(2000)
-          await waitForChainToSync()
-        }
+        // const health = await api.rpc.system.health()
+        // if (health.isSyncing.eq(false)) {
+        //   ui.showSynced()
+        // } else {
+        //   ui.showSyncing()
+        //   await wait(2000)
+        //   await waitForChainToSync()
+        // }
       }
 
       await waitForChainToSync()

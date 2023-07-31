@@ -92,7 +92,7 @@ interface InitializingChain {
   smoldotChain: Promise<SmoldotChain>
 }
 
-interface ReadyChain {
+export interface ReadyChain {
   /**
    * Used to differentiate {ReadyChain} from {InitializingChain}.
    */

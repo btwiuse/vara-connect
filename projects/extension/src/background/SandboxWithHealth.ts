@@ -29,6 +29,16 @@ export class SandboxWithHealth<SandboxId> {
   }
 
   /**
+   * Returns a string error message if the underlying client has crashed in the past. Returns
+   * `undefined` if it hasn't crashed.
+   *
+   * A crash is non-reversible. The only solution is to rebuild a new manager.
+   */
+  get hasCrashed(): string | undefined {
+    return this.#inner.hasCrashed
+  }
+
+  /**
    * Inserts a sandbox in the list of sandboxes held by this state machine.
    *
    * @throws Throws an exception if a sandbox with that identifier already exists.
@@ -37,7 +47,6 @@ export class SandboxWithHealth<SandboxId> {
     // We don't neeed to check for duplicate `sandboxId` below, because this is done
     // by `this.#inner.addSandbox`. For this reason, we call `this.#inner` first.
     this.#inner.addSandbox(sandboxId)
-
     this.#sandboxesChains.set(sandboxId, new Map())
   }
 
@@ -71,10 +80,9 @@ export class SandboxWithHealth<SandboxId> {
   async nextSandboxMessage(
     sandboxId: SandboxId,
   ): Promise<ToApplication | ToOutsideDatabaseContent | ChainsStatusChanged> {
+    console.log("123")
     while (true) {
-      console.log("sandboxID", sandboxId)
       const toApplication = await this.#inner.nextSandboxMessage(sandboxId)
-
       switch (toApplication.type) {
         case "chain-ready": {
           // Internal check to make sure that there's no hidden bug.
@@ -82,19 +90,17 @@ export class SandboxWithHealth<SandboxId> {
             throw new Error(
               "Internal error: inconsistency between lists of chains",
             )
-
-          console.log("this.#inner.sandboxMessage")
-          //     this.#inner.sandboxMessage(sandboxId, {
-          //     origin: "substrate-connect-client",
-          //     type: "rpc",
-          //     chainId: toApplication.chainId,
-          //     jsonRpcMessage: JSON.stringify({
-          //       jsonrpc: "2.0",
-          //       id: "ready-sub:" + this.#nextRpcRqId,
-          //       method: "chainHead_unstable_follow",
-          //       params: [true],
-          //     }),
-          //   })
+          this.#inner.sandboxMessage(sandboxId, {
+            origin: "substrate-connect-client",
+            type: "rpc",
+            chainId: toApplication.chainId,
+            jsonRpcMessage: JSON.stringify({
+              jsonrpc: "2.0",
+              id: "ready-sub:" + this.#nextRpcRqId,
+              method: "chainHead_unstable_follow",
+              params: [true],
+            }),
+          })
           this.#nextRpcRqId += 1
           return toApplication
         }
@@ -108,23 +114,23 @@ export class SandboxWithHealth<SandboxId> {
           // prefix in front of the response.
           // Because smoldot always sends back correct answers, we can just assume that all the
           // fields are present.
-          let jsonRpcMessage = JSON.parse(toApplication.jsonRpcMessage)
+          let parsed = JSON.parse(toApplication.jsonRpcMessage)
 
           // The JSON-RPC message might not contain an id if it is a notification.
-          if (jsonRpcMessage.id) {
+          if (parsed.id) {
             // We know that the `id` is always a string, because all the requests that we send are
             // rewritten to use a string `id`.
-            const jsonRpcMessageId = jsonRpcMessage.id as string
+            const jsonRpcMessageId = parsed.id as string
 
             if (jsonRpcMessageId.startsWith("extern:")) {
-              jsonRpcMessage.id = JSON.parse(
-                (jsonRpcMessage.id as string).slice("extern:".length),
+              parsed.id = JSON.parse(
+                (parsed.id as string).slice("extern:".length),
               )
-              toApplication.jsonRpcMessage = JSON.stringify(jsonRpcMessage)
+              toApplication.jsonRpcMessage = JSON.stringify(parsed)
               return toApplication
             } else if (jsonRpcMessageId.startsWith("health-check:")) {
               // Store the health status in the locally-held information.
-              const result: { peers: number } = jsonRpcMessage.result
+              const result: { peers: number } = parsed.result
               chain.peers = result.peers
 
               // Notify of the change in status.
@@ -133,7 +139,7 @@ export class SandboxWithHealth<SandboxId> {
                 type: "chains-status-changed",
               }
             } else if (jsonRpcMessageId.startsWith("ready-sub:")) {
-              chain.readySubscriptionId = jsonRpcMessage.result
+              chain.readySubscriptionId = parsed.result
             } else if (jsonRpcMessageId.startsWith("block-unpin:")) {
             } else if (jsonRpcMessageId.startsWith("best-block-header:")) {
               // We might receive responses to header requests concerning blocks that were but are
@@ -141,11 +147,9 @@ export class SandboxWithHealth<SandboxId> {
               if (jsonRpcMessageId === chain.bestBlockHeaderRequestId) {
                 delete chain.bestBlockHeaderRequestId
                 // The RPC call might return `null` if the subscription is dead.
-                if (jsonRpcMessage.result) {
+                if (parsed.result) {
                   try {
-                    chain.bestBlockHeight = headerToHeight(
-                      jsonRpcMessage.result,
-                    )
+                    chain.bestBlockHeight = headerToHeight(parsed.result)
                   } catch (error) {
                     delete chain.bestBlockHeight
                   }
@@ -157,51 +161,47 @@ export class SandboxWithHealth<SandboxId> {
             }
           } else {
             if (
-              jsonRpcMessage.method === "chainHead_unstable_followEvent" &&
-              jsonRpcMessage.params.subscription === chain.readySubscriptionId
+              parsed.method === "chainHead_unstable_followEvent" &&
+              parsed.params.subscription === chain.readySubscriptionId
             ) {
               // We've received a notification on our `chainHead_unstable_followEvent`
               // subscription.
-              switch (jsonRpcMessage.params.result.event) {
+              switch (parsed.params.result.event) {
                 case "initialized": {
                   // The chain is now in sync and has downloaded the runtime.
                   chain.isSyncing = false
                   chain.finalizedBlockHashHex =
-                    jsonRpcMessage.params.result.finalizedBlockHash
+                    parsed.params.result.finalizedBlockHash
 
-                  console.log("this.#inner.sandboxMessage health")
-                  //   // Immediately send a single health request to the chain.
-                  //   this.#inner.sandboxMessage(sandboxId, {
-                  //     origin: "substrate-connect-client",
-                  //     type: "rpc",
-                  //     chainId: toApplication.chainId,
-                  //     jsonRpcMessage: JSON.stringify({
-                  //       jsonrpc: "2.0",
-                  //       id: "health-check:" + this.#nextRpcRqId,
-                  //       method: "system_health",
-                  //       params: [],
-                  //     }),
-                  //   })
+                  // Immediately send a single health request to the chain.
+                  this.#inner.sandboxMessage(sandboxId, {
+                    origin: "substrate-connect-client",
+                    type: "rpc",
+                    chainId: toApplication.chainId,
+                    jsonRpcMessage: JSON.stringify({
+                      jsonrpc: "2.0",
+                      id: "health-check:" + this.#nextRpcRqId,
+                      method: "system_health",
+                      params: [],
+                    }),
+                  })
                   this.#nextRpcRqId += 1
 
-                  console.log(
-                    "this.#inner.sandboxMessage chainHead_unstable_header",
-                  )
-                  //   // Also immediately request the header of the finalized block.
-                  //   this.#inner.sandboxMessage(sandboxId, {
-                  //     origin: "substrate-connect-client",
-                  //     type: "rpc",
-                  //     chainId: toApplication.chainId,
-                  //     jsonRpcMessage: JSON.stringify({
-                  //       jsonrpc: "2.0",
-                  //       id: "best-block-header:" + this.#nextRpcRqId,
-                  //       method: "chainHead_unstable_header",
-                  //       params: [
-                  //         chain.readySubscriptionId,
-                  //         chain.finalizedBlockHashHex,
-                  //       ],
-                  //     }),
-                  //   })
+                  // Also immediately request the header of the finalized block.
+                  this.#inner.sandboxMessage(sandboxId, {
+                    origin: "substrate-connect-client",
+                    type: "rpc",
+                    chainId: toApplication.chainId,
+                    jsonRpcMessage: JSON.stringify({
+                      jsonrpc: "2.0",
+                      id: "best-block-header:" + this.#nextRpcRqId,
+                      method: "chainHead_unstable_header",
+                      params: [
+                        chain.readySubscriptionId,
+                        chain.finalizedBlockHashHex,
+                      ],
+                    }),
+                  })
                   chain.bestBlockHeaderRequestId =
                     "best-block-header:" + this.#nextRpcRqId
                   this.#nextRpcRqId += 1
@@ -219,43 +219,37 @@ export class SandboxWithHealth<SandboxId> {
                   delete chain.bestBlockHeaderRequestId
                   delete chain.finalizedBlockHashHex
                   delete chain.bestBlockHeight
-                  console.log(
-                    "this.#inner.sandboxMessage chainHead_unstable_follow",
-                  )
-                  //   this.#inner.sandboxMessage(sandboxId, {
-                  //     origin: "substrate-connect-client",
-                  //     type: "rpc",
-                  //     chainId: toApplication.chainId,
-                  //     jsonRpcMessage: JSON.stringify({
-                  //       jsonrpc: "2.0",
-                  //       id: "ready-sub:" + this.#nextRpcRqId,
-                  //       method: "chainHead_unstable_follow",
-                  //       params: [true],
-                  //     }),
-                  //   })
+                  this.#inner.sandboxMessage(sandboxId, {
+                    origin: "substrate-connect-client",
+                    type: "rpc",
+                    chainId: toApplication.chainId,
+                    jsonRpcMessage: JSON.stringify({
+                      jsonrpc: "2.0",
+                      id: "ready-sub:" + this.#nextRpcRqId,
+                      method: "chainHead_unstable_follow",
+                      params: [true],
+                    }),
+                  })
                   this.#nextRpcRqId += 1
                   break
                 }
                 case "bestBlockChanged": {
-                  console.log(
-                    "this.#inner.sandboxMessage chainHead_unstable_header 2",
-                  )
-                  //   // The best block has changed. Request the header of this new best block in
-                  //   // order to know its height.
-                  //   this.#inner.sandboxMessage(sandboxId, {
-                  //     origin: "substrate-connect-client",
-                  //     type: "rpc",
-                  //     chainId: toApplication.chainId,
-                  //     jsonRpcMessage: JSON.stringify({
-                  //       jsonrpc: "2.0",
-                  //       id: "best-block-header:" + this.#nextRpcRqId,
-                  //       method: "chainHead_unstable_header",
-                  //       params: [
-                  //         chain.readySubscriptionId,
-                  //         jsonRpcMessage.params.result.bestBlockHash,
-                  //       ],
-                  //     }),
-                  //   })
+                  // The best block has changed. Request the header of this new best block in
+                  // order to know its height.
+                  this.#inner.sandboxMessage(sandboxId, {
+                    origin: "substrate-connect-client",
+                    type: "rpc",
+                    chainId: toApplication.chainId,
+                    jsonRpcMessage: JSON.stringify({
+                      jsonrpc: "2.0",
+                      id: "best-block-header:" + this.#nextRpcRqId,
+                      method: "chainHead_unstable_header",
+                      params: [
+                        chain.readySubscriptionId,
+                        jsonRpcMessage.params.result.bestBlockHash,
+                      ],
+                    }),
+                  })
                   chain.bestBlockHeaderRequestId =
                     "best-block-header:" + this.#nextRpcRqId
                   this.#nextRpcRqId += 1
@@ -276,20 +270,17 @@ export class SandboxWithHealth<SandboxId> {
                   ].forEach((blockHash) => {
                     // `chain.finalizedBlockHashHex` can be undefined
                     if (blockHash === undefined) return
-                    console.log(
-                      "this.#inner.sandboxMessage chainHead_unstable_unpin",
-                    )
-                    // this.#inner.sandboxMessage(sandboxId, {
-                    //   origin: "substrate-connect-client",
-                    //   type: "rpc",
-                    //   chainId: toApplication.chainId,
-                    //   jsonRpcMessage: JSON.stringify({
-                    //     jsonrpc: "2.0",
-                    //     id: "block-unpin:" + this.#nextRpcRqId,
-                    //     method: "chainHead_unstable_unpin",
-                    //     params: [chain.readySubscriptionId, blockHash],
-                    //   }),
-                    // })
+                    this.#inner.sandboxMessage(sandboxId, {
+                      origin: "substrate-connect-client",
+                      type: "rpc",
+                      chainId: toApplication.chainId,
+                      jsonRpcMessage: JSON.stringify({
+                        jsonrpc: "2.0",
+                        id: "block-unpin:" + this.#nextRpcRqId,
+                        method: "chainHead_unstable_unpin",
+                        params: [chain.readySubscriptionId, blockHash],
+                      }),
+                    })
                     this.#nextRpcRqId += 1
                     chain.finalizedBlockHashHex = newCurrentFinalized
                   })
@@ -343,16 +334,14 @@ export class SandboxWithHealth<SandboxId> {
           isSyncing: true,
           peers: 0,
         })
-        // this.#inner.sandboxMessage(sandboxId, message)
-        console.log("add - send to #innerSandbox message", message)
+        this.#inner.sandboxMessage(sandboxId, message)
         break
       }
       case "remove-chain": {
         // As documented in the protocol, remove-chain messages concerning an invalid chainId are
         // simply ignored.
         this.#sandboxesChains.get(sandboxId)!.delete(message.chainId)
-        // this.#inner.sandboxMessage(sandboxId, message)
-        console.log("remove - send to #innerSandbox message", message)
+        this.#inner.sandboxMessage(sandboxId, message)
         break
       }
       case "rpc": {
@@ -363,14 +352,12 @@ export class SandboxWithHealth<SandboxId> {
             "extern:" + JSON.stringify(parsedJsonRpcMessage.id)
           message.jsonRpcMessage = JSON.stringify(parsedJsonRpcMessage)
         } finally {
-          console.log("rpc - send to #innerSandbox message", message)
-          //   this.#inner.sandboxMessage(sandboxId, message)
+          this.#inner.sandboxMessage(sandboxId, message)
         }
         break
       }
       default: {
-        // this.#inner.sandboxMessage(sandboxId, message)
-        console.log("default - send to #innerSandbox message", message)
+        this.#inner.sandboxMessage(sandboxId, message)
       }
     }
   }
@@ -378,18 +365,17 @@ export class SandboxWithHealth<SandboxId> {
   #sendPings() {
     for (const [sandboxId, sandbox] of this.#sandboxesChains) {
       for (const [chainId] of sandbox) {
-        console.log("ping - send to #innerSandbox message", this.#nextRpcRqId)
-        // this.#inner.sandboxMessage(sandboxId, {
-        //   origin: "substrate-connect-client",
-        //   type: "rpc",
-        //   chainId,
-        //   jsonRpcMessage: JSON.stringify({
-        //     jsonrpc: "2.0",
-        //     id: "health-check:" + this.#nextRpcRqId,
-        //     method: "system_health",
-        //     params: [],
-        //   }),
-        // })
+        this.#inner.sandboxMessage(sandboxId, {
+          origin: "substrate-connect-client",
+          type: "rpc",
+          chainId,
+          jsonRpcMessage: JSON.stringify({
+            jsonrpc: "2.0",
+            id: "health-check:" + this.#nextRpcRqId,
+            method: "system_health",
+            params: [],
+          }),
+        })
         this.#nextRpcRqId += 1
       }
     }
