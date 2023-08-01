@@ -80,9 +80,10 @@ export class SandboxWithHealth<SandboxId> {
   async nextSandboxMessage(
     sandboxId: SandboxId,
   ): Promise<ToApplication | ToOutsideDatabaseContent | ChainsStatusChanged> {
-    console.log("123")
     while (true) {
+      let jsonRpcResponse
       const toApplication = await this.#inner.nextSandboxMessage(sandboxId)
+
       switch (toApplication.type) {
         case "chain-ready": {
           // Internal check to make sure that there's no hidden bug.
@@ -102,6 +103,7 @@ export class SandboxWithHealth<SandboxId> {
             }),
           })
           this.#nextRpcRqId += 1
+          console.log("return to application")
           return toApplication
         }
 
@@ -246,7 +248,7 @@ export class SandboxWithHealth<SandboxId> {
                       method: "chainHead_unstable_header",
                       params: [
                         chain.readySubscriptionId,
-                        jsonRpcMessage.params.result.bestBlockHash,
+                        parsed.params.result.bestBlockHash,
                       ],
                     }),
                   })
@@ -258,10 +260,11 @@ export class SandboxWithHealth<SandboxId> {
                 case "finalized": {
                   // When one or more new blocks get finalized, we unpin all blocks except for
                   // the new current finalized.
-                  let finalized = jsonRpcMessage.params.result
+                  let finalized = parsed.params.result
                     .finalizedBlocksHashes as [string]
-                  let pruned = jsonRpcMessage.params.result
-                    .prunedBlocksHashes as [string]
+                  let pruned = parsed.params.result.prunedBlocksHashes as [
+                    string,
+                  ]
                   let newCurrentFinalized = finalized.pop()
                   ;[
                     chain.finalizedBlockHashHex,
@@ -323,6 +326,7 @@ export class SandboxWithHealth<SandboxId> {
    * @throws Throws an exception if the ̀`sandboxId` isn't valid.
    */
   sandboxMessage(sandboxId: SandboxId, message: ToExtension | ToSandbox) {
+    console.log("===>>> 5 -> ", message.type)
     switch (message.type) {
       case "add-chain":
       case "add-well-known-chain":
@@ -346,17 +350,23 @@ export class SandboxWithHealth<SandboxId> {
       }
       case "rpc": {
         // All incoming JSON-RPC requests are modified to add `extern:` in front of their id.
-        try {
-          let parsedJsonRpcMessage = JSON.parse(message.jsonRpcMessage)
-          parsedJsonRpcMessage.id =
-            "extern:" + JSON.stringify(parsedJsonRpcMessage.id)
-          message.jsonRpcMessage = JSON.stringify(parsedJsonRpcMessage)
-        } finally {
-          this.#inner.sandboxMessage(sandboxId, message)
-        }
+        let parsedJsonRpcMessage = JSON.parse(message.jsonRpcMessage)
+        console.log("===>>> 5 -> ", parsedJsonRpcMessage)
+        parsedJsonRpcMessage.id =
+          "extern:" + JSON.stringify(parsedJsonRpcMessage.id)
+        message.jsonRpcMessage = JSON.stringify(parsedJsonRpcMessage)
+
+        console.log(
+          "+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+* this.#inner.sandboxMessage(sandboxId, message): ",
+          sandboxId,
+          message,
+        )
+        this.#inner.sandboxMessage(sandboxId, message)
+
         break
       }
       default: {
+        console.log("===>>> 5 DEFAULT -> ", message)
         this.#inner.sandboxMessage(sandboxId, message)
       }
     }

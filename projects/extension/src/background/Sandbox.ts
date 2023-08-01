@@ -91,7 +91,6 @@ export class Sandbox<SandboxId> {
   ): Promise<ToApplication | ToOutside> {
     const sandbox = this.#sandboxes.get(sandboxId)!
     const message = await sandbox.pullMessagesQueue()
-    console.log("< = = = = = pull", message)
     if (message === null) throw new Error("Sandbox has been destroyed")
     return message
   }
@@ -107,6 +106,12 @@ export class Sandbox<SandboxId> {
   sandboxMessage(sandboxId: SandboxId, message: ToExtension | ToSandbox) {
     // It is illegal to call this function with an invalid `sandboxId`.
     const sandbox = this.#sandboxes.get(sandboxId)!
+    console.log(
+      "-------- Enter sandboxMessage -> ",
+      message.type,
+      "sandbox",
+      sandbox,
+    )
     switch (message.type) {
       case "rpc": {
         const chain = sandbox.chains.get(message.chainId)
@@ -132,6 +137,12 @@ export class Sandbox<SandboxId> {
         try {
           console.log("send to smoldotChain = = = = = > > > ", message.chainId)
           chain.smoldotChain.sendJsonRpc(message.jsonRpcMessage)
+          console.log(
+            "-------- sent to chain: -> ",
+            chain,
+            "--- message",
+            message,
+          )
         } catch (error) {
           const errorMsg =
             "Internal error in smoldot: " +
@@ -140,7 +151,6 @@ export class Sandbox<SandboxId> {
           this.#hasCrashed = errorMsg
           return
         }
-
         break
       }
 
@@ -163,7 +173,6 @@ export class Sandbox<SandboxId> {
           message.type === "add-well-known-chain" ||
           message.type === "add-well-known-chain-with-db"
         ) {
-          console.log("1", this.#wellKnownChainSpecs.has(message.chainName))
           if (!this.#wellKnownChainSpecs.has(message.chainName)) {
             sandbox.pushMessagesQueue({
               origin: "substrate-connect-extension",
@@ -328,6 +337,13 @@ export class Sandbox<SandboxId> {
         type: "chain-ready",
         chainId,
       })
+
+      // THIS SEEMS TO BE THE MISSING PUZZLE
+      while (true) {
+        const response = JSON.parse(await chain.nextJsonRpcResponse())
+        console.log("// ", chainId, " /// response?", response)
+        sandbox.pushMessagesQueue(response)
+      }
     } catch (err) {
       if (err instanceof CrashError) this.#hasCrashed = err.message
 

@@ -299,21 +299,16 @@ chrome.runtime.onConnect.addListener((port) => {
 
     // This stops looping through "readyManager"
     ;(async () => {
-      console.log("start looping")
+      console.log("--------- start --------- looping ---------")
       while (true) {
         let message
         try {
           message = await readyManager.nextSandboxMessage(port)
-          console.log(
-            "--- await readyManager.nextSandboxMessage(port) ------>>>>>>>>> ",
-            message,
-          )
         } catch (error) {
           console.log("ER-R-O-R", error)
           // An error is thrown by `nextSandboxMessage` if the sandbox is destroyed.
           break
         }
-
         if (message.type === "chains-status-changed") {
           notifyAllChainsChangedListeners()
         } else if (message.type === "database-content") {
@@ -324,7 +319,10 @@ chrome.runtime.onConnect.addListener((port) => {
 
           // We make sure that the message is indeed of type `ToApplication`.
           const messageCorrectType: ToApplication = message
-          console.log("--- ToApplication = message >>>>>> ", message)
+          console.log(
+            "--------------------------------------------------------- ToApplication = message >>>>>> ",
+            message,
+          )
           port.postMessage(messageCorrectType)
 
           // If an error happened, this might be an indication that the manager has crashed.
@@ -338,6 +336,7 @@ chrome.runtime.onConnect.addListener((port) => {
             }
           }
         }
+        console.log("--------- reloop ---------")
       }
     })()
 
@@ -345,9 +344,12 @@ chrome.runtime.onConnect.addListener((port) => {
   })
 
   port.onMessage.addListener((message: ToExtension) => {
+    console.log("===>>> 1 -> ", message)
     managerWithSandbox = managerWithSandbox.then(
       (manager: SandboxWithHealth<chrome.runtime.Port | null> | undefined) => {
+        console.log("===>>> 2 -> ", message)
         if (manager) {
+          console.log("===>>> 3 -> ", message.type)
           manager.sandboxMessage(port, message)
           if (
             message.type === "add-chain" ||
@@ -357,7 +359,7 @@ chrome.runtime.onConnect.addListener((port) => {
             notifyAllChainsChangedListeners()
           }
         } else {
-          console.log("message.type ===> ", message.type)
+          console.log("===>>> 1 -> ", message.type)
           // If the page wants to send a message while the manager has crashed, we instantly
           // return an error.
           if (

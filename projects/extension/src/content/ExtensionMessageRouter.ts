@@ -77,13 +77,16 @@ export class ExtensionMessageRouter {
   }
 
   #postMessage(message: ToExtension): void {
+    console.log("THIS PORT", this.#port)
     if (!this.#port) {
       this.#port = chrome.runtime.connect()
+      console.log("UNDEFINED THIS PORT", this.#port)
 
       // forward any messages: extension -> page
       this.#port.onMessage.addListener((data: ToApplication): void => {
         if (data.type === "error") this.#chainIds.delete(data.chainId)
 
+        console.log("==> receive from extension -> page: ", data)
         sendMessage(data)
       })
 
@@ -101,6 +104,8 @@ export class ExtensionMessageRouter {
         this.#chainIds.clear()
       })
     }
+
+    console.log("SEND THE MESSAEG TO PORT", this.#port, message)
 
     this.#port.postMessage(message)
   }
