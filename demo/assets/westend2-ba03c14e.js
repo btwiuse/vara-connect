@@ -1,4 +1,4 @@
-const b=`{
+var b=`{
   "name": "Westend",
   "id": "westend2",
   "bootNodes": [

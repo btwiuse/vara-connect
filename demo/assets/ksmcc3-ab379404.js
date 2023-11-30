@@ -1,4 +1,4 @@
-const e=`{
+var e=`{
   "badBlocks": [],
   "bootNodes": [
     "/dns/kusama-bootnode-0.polkadot.io/tcp/30333/p2p/12D3KooWSueCPH3puP2PcvqPJdNaDNF3jMZjtJtDiSy35pWrbt5h",

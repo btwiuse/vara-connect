@@ -1,4 +1,4 @@
-const c=`{
+var c=`{
   "name": "Rococo",
   "id": "rococo_v2_2",
   "chainType": "Live",
