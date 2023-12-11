@@ -16,6 +16,7 @@ register({
         "./chainspecs/ksmcc3.json",
         "./chainspecs/westend2.json",
         "./chainspecs/rococo_v2_2.json",
+        "./chainspecs/vara.json",
       ].map((path) =>
         fetch(chrome.runtime.getURL(path)).then((response) => response.text()),
       ),

@@ -161,6 +161,7 @@ export const Bootnodes = () => {
             <option value="ksmcc3">Kusama</option>
             <option value="westend2">Westend</option>
             <option value="rococo_v2_2">Rococo</option>
+            <option value="vara">Vara</option>
           </select>
           <span className="focus"></span>
         </div>
